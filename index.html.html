@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interrogation Simulator 2000</title>
+    <style>
+        body {
+            background-color: #008080;
+            margin: 0;
+            padding: 0;
+            font-family: 'MS Sans Serif', sans-serif;
+            color: #000;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            background-image: url('carboardboxel_create_me_a_image_of_a_police_integration_room__350484e5-14b6-4d21-877f-9d20dddf85af_3.png');
+            background-size: cover;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15) 0px,
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 999;
+            animation: scrollLines 1s linear infinite;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                ellipse at center,
+                rgba(0, 255, 0, 0.1) 0%,
+                rgba(0, 255, 0, 0) 60%
+            );
+            pointer-events: none;
+        }
+
+        .glare-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 998;
+            background: radial-gradient(
+                ellipse at 70% 20%,
+                rgba(255, 255, 255, 0.1) 0%,
+                transparent 70%
+            );
+            animation: glare 10s infinite alternate;
+        }
+
+        .desktop {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            box-sizing: border-box;
+        }
+
+        .left-panel {
+            width: 60%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .right-panel {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            width: 35%;
+            height: 40%;
+            min-width: 300px;
+        }
+
+        .window {
+            background: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.25);
+            margin-bottom: 20px;
+        }
+
+        .right-panel .window {
+            resize: both;
+            overflow: auto;
+            width: 100%;
+            height: 100%;
+            min-width: 300px;
+            min-height: 200px;
+        }
+
+        #crimeSummary {
+            height: 30vh;
+        }
+
+        #chatLog {
+            height: calc(50vh - 100px);
+        }
+
+        .live-feed {
+            height: 100%;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #808080;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            padding: 10px;
+            animation: flicker 0.1s infinite;
+            background-image: url('https://cdn.midjourney.com/350484e5-14b6-4d21-877f-9d20dddf85af/0_3.png');
+            background-size: cover;
+            background-position: center;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .title-bar {
+            background: #000080;
+            color: white;
+            padding: 2px 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #808080;
+        }
+
+        .window-content {
+            padding: 8px;
+            overflow-y: auto;
+            max-height: calc(100% - 30px);
+            font-size: 14px;
+        }
+
+        #taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #c0c0c0;
+            border-top: 2px solid #ffffff;
+            padding: 2px;
+            display: flex;
+            gap: 4px;
+            height: 30px;
+            z-index: 1000;
+        }
+
+        .stress-indicator {
+            width: 100px;
+            height: 20px;
+            border: 2px solid #000;
+            background: #c0c0c0;
+            margin: 10px 0;
+        }
+
+        .stress-fill {
+            height: 100%;
+            background: #ff0000;
+            width: 0%;
+        }
+
+        #caseFile, #suspectFile, #evidenceFile {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60vw;
+            max-height: 70vh;
+            z-index: 1001;
+            display: none;
+        }
+
+        .verdict-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            padding: 20px;
+            z-index: 1002;
+            width: 400px;
+            display: none;
+        }
+
+        .draggable {
+            cursor: move;
+            user-select: none;
+        }
+
+        .evidence-list, .suspect-info {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 5px 0;
+        }
+
+        .evidence-list li, .suspect-info li {
+            margin: 3px 0;
+            padding: 2px 5px;
+            background: #ffffff;
+            border: 1px solid #808080;
+        }
+
+        .lives-container {
+            margin-left: auto;
+            display: flex;
+            gap: 5px;
+            padding-right: 20px;
+            align-items: center;
+        }
+
+        .life-badge {
+            width: 24px;
+            height: 24px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23000080" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>');
+            background-size: contain;
+        }
+
+        .life-badge.lost {
+            filter: grayscale(100%) brightness(40%);
+        }
+
+        .intro-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1003;
+            width: 400px;
+        }
+
+        .game-over {
+            color: #ff0000;
+            font-size: 24px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .verdict-buttons {
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .next-case-button {
+            display: none;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .verdict-result {
+            min-height: 60px;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.9; }
+            50% { opacity: 1; }
+            100% { opacity: 0.9; }
+        }
+
+        @keyframes scrollLines {
+            from { background-position: 0 0; }
+            to { background-position: 0 2px; }
+        }
+
+        @keyframes glare {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.1; }
+        }
+
+        ::-webkit-scrollbar {
+            width: 16px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #808080;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="glare-overlay"></div>
+    <div class="desktop">
+        <div class="left-panel">
+            <div class="window">
+                <div class="title-bar">Case Overview</div>
+                <div class="window-content" id="crimeSummary"></div>
+            </div>
+            
+            <div class="window">
+                <div class="title-bar">Interrogation Console</div>
+                <div class="window-content">
+                    <div>Time: <span id="timer">06:00</span> | Stress: <span id="stressLevel">0</span>%</div>
+                    <div id="chatLog" style="overflow-y:auto"></div>
+                    <input type="text" id="questionInput" style="width:70%">
+                    <button onclick="askQuestion()">Ask</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="window">
+                <div class="title-bar">Suspect Monitor</div>
+                <div class="window-content live-feed">
+                    <div id="suspectCam"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="taskbar">
+        <button onclick="toggleCaseFile()">Case File</button>
+        <button onclick="toggleSuspectFile()">Suspect File</button>
+        <button onclick="toggleEvidenceFile()">Evidence File</button>
+        <div class="lives-container">
+            <div class="life-badge" id="life1"></div>
+            <div class="life-badge" id="life2"></div>
+            <div class="life-badge" id="life3"></div>
+        </div>
+    </div>
+
+    <div class="window" id="caseFile">
+        <div class="title-bar draggable">
+            Case File
+            <button onclick="toggleCaseFile()" style="margin-left:auto">X</button>
+        </div>
+        <div class="window-content" id="caseFileContent"></div>
+    </div>
+
+    <div class="window" id="suspectFile">
+        <div class="title-bar draggable">
+            Suspect File
+            <button onclick="toggleSuspectFile()" style="margin-left:auto">X</button>
+        </div>
+        <div class="window-content" id="suspectFileContent"></div>
+    </div>
+
+    <div class="window" id="evidenceFile">
+        <div class="title-bar draggable">
+            Evidence File
+            <button onclick="toggleEvidenceFile()" style="margin-left:auto">X</button>
+        </div>
+        <div class="window-content" id="evidenceFileContent"></div>
+    </div>
+
+    <div class="window intro-popup" id="introPopup">
+        <div class="title-bar draggable">
+            OFFICIAL POLICE BRIEFING
+            <button onclick="startGame()" style="margin-left:auto">X</button>
+        </div>
+        <div class="window-content">
+            <p style="text-align: center; font-weight: bold;">POLICE INTERROGATION SIMULATOR</p>
+            <p style="color: #ff0000;">⚠️ WARNING ⚠️</p>
+            <p>You are authorized to make only 3 incorrect determinations before being removed from duty.</p>
+            <p>Maintain vigilance and analyze all evidence carefully.</p>
+            <div style="text-align: center; margin-top: 15px;">
+                <button onclick="startGame()">BEGIN INTERROGATION</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="window verdict-dialog" id="gameOverScreen" style="display: none;">
+        <div class="title-bar">SYSTEM ALERT</div>
+        <div class="window-content">
+            <div class="game-over">GAME OVER</div>
+            <div>You have exceeded the allowed incorrect determinations.</div>
+            <div style="margin: 15px 0;">Your service record has been terminated.</div>
+            <div style="text-align:center">
+                <button onclick="location.reload()">RETRY FROM BEGINNING</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="verdict-dialog" id="verdictDialog">
+        <div class="title-bar">INTERROGATION RESULTS</div>
+        <div class="window-content">
+            <div style="margin: 10px 0">
+                Stress Level: <span id="finalStress">0</span>%<br>
+                Contradictions: <span id="finalContradictions">0</span>
+            </div>
+            <div class="verdict-result" id="verdictResult"></div>
+            <div class="verdict-buttons" id="activeVerdictButtons">
+                <button class="verdict-button" onclick="checkVerdict(true)">GUILTY</button>
+                <button class="verdict-button" onclick="checkVerdict(false)">INNOCENT</button>
+            </div>
+            <button class="next-case-button" id="nextCaseButton" onclick="handleNextCase()">NEXT CASE</button>
+        </div>
+    </div>
+
+    <script>
+        const SUSPECT_NAMES = Array.from({length: 50}, (_,i) => 
+            `${['James','Michael','David','John','Robert'][i%5]} ${['Smith','Johnson','Williams','Brown','Jones'][i%5]}`
+        );
+
+        let gameState = {
+            lives: 3,
+            crime: null,
+            suspect: null,
+            contradictions: 0,
+            stress: 0,
+            timer: 360,
+            chatHistory: [],
+            interrogationPhase: 1
+        };
+
+        async function queryChatGPT(prompt) {
+            try {
+                const response = await fetch('/.netlify/functions/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({prompt: prompt})
+                });
+                const data = await response.json();
+                return data.content;
+            } catch (error) {
+                return "SYSTEM ERROR: Failed to generate response";
+            }
+        }
+
+        function makeDraggable(element) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            const titleBar = element.querySelector('.draggable');
+            
+            titleBar.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                element.style.zIndex = 1001;
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                element.style.top = (element.offsetTop - pos2) + "px";
+                element.style.left = (element.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
+        }
+
+        function toggleCaseFile() {
+            const cf = document.getElementById('caseFile');
+            cf.style.display = cf.style.display === 'none' ? 'block' : 'none';
+            document.getElementById('caseFileContent').textContent = gameState.crime;
+        }
+
+        function toggleSuspectFile() {
+            const sf = document.getElementById('suspectFile');
+            sf.style.display = sf.style.display === 'none' ? 'block' : 'none';
+            if(sf.style.display === 'block') {
+                sf.style.left = '40%';
+                sf.style.top = '30%';
+                updateSuspectFile();
+            }
+        }
+
+        function toggleEvidenceFile() {
+            const ef = document.getElementById('evidenceFile');
+            ef.style.display = ef.style.display === 'none' ? 'block' : 'none';
+            if(ef.style.display === 'block') {
+                ef.style.left = '30%';
+                ef.style.top = '40%';
+                updateEvidenceFile();
+            }
+        }
+
+        function updateSuspectFile() {
+            const content = document.getElementById('suspectFileContent');
+            const profile = gameState.suspect.profile;
+            
+            const details = {
+                name: extractDetail(profile, /Name:\s*(.+)/),
+                sex: extractDetail(profile, /Sex:\s*(.+)/),
+                height: extractDetail(profile, /Height:\s*(.+)/),
+                description: extractDetail(profile, /Description:\s*(.+)/)
+            };
+
+            content.innerHTML = `
+                <ul class="suspect-info">
+                    ${Object.entries(details).map(([key, value]) => 
+                        `<li><b>${key.toUpperCase()}:</b> ${value || 'Unknown'}</li>`
+                    ).join('')}
+                </ul>
+                <div>${profile}</div>
+            `;
+        }
+
+        function updateEvidenceFile() {
+            const content = document.getElementById('evidenceFileContent');
+            const evidenceSection = gameState.crime.match(/Evidence:([\s\S]+?)Witness Statements/i)[1];
+            const evidenceItems = evidenceSection.split('\n').filter(line => line.trim().startsWith('-'));
+
+            content.innerHTML = `
+                <ul class="evidence-list">
+                    ${evidenceItems.map(item => `<li>${item.replace('- ', '')}</li>`).join('')}
+                </ul>
+            `;
+        }
+
+        function extractDetail(text, regex) {
+            const match = text.match(regex);
+            return match ? match[1].trim() : 'Data unavailable';
+        }
+
+        async function initializeGame() {
+            try {
+                const suspectName = SUSPECT_NAMES[Math.floor(Math.random()*50)];
+                
+                const crimePrompt = `Generate detailed police case file with:
+                - Case number (format: YYYY-######)
+                - Crime type (burglary/homicide/kidnapping)
+                - 150-word incident summary with exact times/locations
+                - 3-5 physical/digital evidence items
+                - 2 witness statements with names/ages
+                - Primary suspect: ${suspectName}
+                - Clear motive opportunity
+                Format sections with headers: Case File, Incident Summary, Evidence, Witness Statements, Suspect Profile`;
+                
+                gameState.crime = await queryChatGPT(crimePrompt);
+                gameState.suspect = await generateSuspectProfile(suspectName);
+                
+                makeDraggable(document.getElementById('caseFile'));
+                makeDraggable(document.getElementById('suspectFile'));
+                makeDraggable(document.getElementById('evidenceFile'));
+                
+                displayCaseSummary();
+                startTimer();
+                updateLiveFeed();
+            } catch (error) {
+                console.error('Initialization error:', error);
+                alert('Failed to initialize game. Check console for details.');
+            }
+        }
+
+        async function generateSuspectProfile(name) {
+            try {
+                const isGuilty = Math.random() > 0.5;
+                const prompt = `Create detailed suspect profile for ${name} with:
+                - Full name
+                - Sex (Male/Female/Other)
+                - Height (format: X'XX")
+                - Physical description (age, hair, distinguishing features)
+                - Psychological profile
+                - Known associates
+                - Criminal record (if any)
+                Format sections clearly without markdown`;
+
+                const profile = await queryChatGPT(prompt);
+                const deceptionMatch = profile.match(/deception tactics:\s*(.+?)(\n|$)/i);
+                
+                return {
+                    name,
+                    isGuilty,
+                    profile,
+                    stressTriggers: [],
+                    deceptionPatterns: deceptionMatch ? 
+                        deceptionMatch[1].split(/,\s*/) : 
+                        ['evasion', 'denial', 'deflection']
+                };
+            } catch (error) {
+                console.error('Profile generation error:', error);
+                return {
+                    name,
+                    isGuilty: true,
+                    profile: 'Error generating profile',
+                    stressTriggers: [],
+                    deceptionPatterns: ['evasion', 'denial', 'deflection']
+                };
+            }
+        }
+
+        async function askQuestion() {
+            try {
+                const question = document.getElementById('questionInput').value.trim();
+                if (!question) return;
+
+                const response = await generateInterrogationResponse(question);
+                gameState.chatHistory.push({question, response});
+                
+                updateChat(question, response);
+                analyzeResponse(response);
+                document.getElementById('questionInput').value = '';
+                updateLiveFeed();
+            } catch (error) {
+                console.error('Question handling error:', error);
+                alert('Failed to process question. Check console for details.');
+            }
+        }
+
+        async function generateInterrogationResponse(question) {
+            const interrogationFramework = gameState.suspect.isGuilty ? `
+            You are ${gameState.suspect.name}, actually guilty. Follow these rules:
+            1. Use deception tactics: ${gameState.suspect.deceptionPatterns.join(', ')}
+            2. Apply Reid Phase ${gameState.interrogationPhase} behavior: ${getReidPhaseBehavior(gameState.interrogationPhase)}
+            3. Stress Level ${gameState.stress}% effects: ${getStressEffects()}
+            4. Evidence Reaction: ${getEvidenceReaction(question)}
+            5. Tone Adaptation: ${getToneResponse(question)}
+            
+            Include 2+ of:
+            - Strategic pauses (...)
+            - Verbal tics (uh, um)
+            - Deflection phrases
+            - Mirroring interrogator's words
+            - Emotional escalation markers` 
+            : 
+            `You are innocent. Respond with:
+            - Direct answers
+            - Consistent details
+            - Appropriate confusion
+            - Verifiable information`;
+
+            const prompt = `${interrogationFramework}
+            
+            Crime Details: ${gameState.crime}
+            Suspect Profile: ${gameState.suspect.profile}
+            Previous Answers: ${gameState.chatHistory.slice(-3).map(qa => qa.response).join(' | ')}
+            
+            Respond to: "${question}"
+            Keep response under 2 sentences with psychological realism`;
+
+            return await queryChatGPT(prompt);
+        }
+
+        function getReidPhaseBehavior(phase) {
+            const phases = {
+                1: "Strong denial with closed body language",
+                2: "Partial agreement with moral justification",
+                3: "Increased avoidance and fidgeting",
+                4: "Quick explanations with shaky voice",
+                5: "False cooperation tactics",
+                6: "Emotional outbursts",
+                7: "Hesitant option choosing",
+                8: "Confession breakdown"
+            };
+            return phases[phase] || "Normal interrogation exchange";
+        }
+
+        function getStressEffects() {
+            return gameState.stress < 30 ? "Confident answers" :
+                   gameState.stress < 60 ? "Hesitant responses" :
+                   "Contradictions and emotional volatility";
+        }
+
+        function getEvidenceReaction(question) {
+            if(question.match(/evidence|proof/i)) {
+                gameState.stress += 15;
+                return "Panic denial: 'That's not possible!'";
+            }
+            if(question.match(/alibi|where were you/i)) {
+                gameState.stress += 10;
+                return "Revised story: 'I must have forgotten...'";
+            }
+            return "Default evasion pattern";
+        }
+
+        function getToneResponse(question) {
+            if(question.match(/please|help me understand/i)) {
+                return "Sympathetic opening: 'I want to cooperate...'";
+            }
+            if(question.match(/!|\bproof\b/i)) {
+                return "Defensive posture: 'Why are you accusing me?!'";
+            }
+            return "Neutral deflection";
+        }
+
+        function analyzeResponse(response) {
+            const guiltMarkers = {
+                evasion: /\b(I don't recall|maybe|possibly)\b/gi,
+                minimization: /\b(just|only|merely)\b/gi,
+                projection: /\b(someone else|they must have)\b/gi,
+                stress: /\.{3}|uh|um/gi
+            };
+
+            Object.entries(guiltMarkers).forEach(([type, regex]) => {
+                const matches = response.match(regex) || [];
+                gameState.contradictions += matches.length;
+                gameState.stress += matches.length * {evasion: 5, minimization: 3, projection: 8, stress: 2}[type];
+            });
+
+            if(gameState.stress >= 80 && Math.random() < 0.3) {
+                induceConfession();
+            }
+
+            document.getElementById('stressLevel').textContent = Math.min(gameState.stress, 100);
+            gameState.interrogationPhase = Math.min(8, Math.floor(gameState.stress/12.5));
+        }
+
+        function induceConfession() {
+            const confession = `(Voice breaking) Okay... I did it. ${gameState.crime.match(/Motive:\s*(.+?)(\n|$)/)[1]}`;
+            gameState.chatHistory.push({question: "", response: confession});
+            updateChat('', confession);
+        }
+
+        function displayCaseSummary() {
+            const summary = gameState.crime.split('\n')
+                .filter(line => line.match(/Case File|Incident Summary|Primary Suspect/))
+                .join('\n');
+            document.getElementById('crimeSummary').textContent = summary;
+        }
+
+        function updateLiveFeed() {
+            const cam = document.getElementById('suspectCam');
+            const time = new Date().toLocaleTimeString();
+            cam.innerHTML = `[LIVE FEED: INTERROGATION ROOM 3]\n\n> SUSPECT: ${gameState.suspect.name}\n> STATUS: ${getStressStatus()}\n> TIMESTAMP: ${time}\n${'▯'.repeat(30)}`;
+        }
+
+        function getStressStatus() {
+            return gameState.stress > 75 ? 'BREAKING' :
+                   gameState.stress > 50 ? 'AGITATED' :
+                   gameState.stress > 25 ? 'TENSE' : 'CALM';
+        }
+
+        function startTimer() {
+            setInterval(() => {
+                gameState.timer--;
+                document.getElementById('timer').textContent = 
+                    `${Math.floor(gameState.timer/60).toString().padStart(2,'0')}:` +
+                    `${(gameState.timer%60).toString().padStart(2,'0')}`;
+                
+                if(gameState.timer <= 0) endInterrogation();
+                updateLiveFeed();
+            }, 1000);
+        }
+
+        function updateChat(question, response) {
+            const chatLog = document.getElementById('chatLog');
+            chatLog.innerHTML += `<div><b>You:</b> ${question}</div>` +
+                               `<div><b>Suspect:</b> ${response}</div>`;
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function endInterrogation() {
+            document.getElementById('questionInput').disabled = true;
+            const dialog = document.getElementById('verdictDialog');
+            document.getElementById('finalStress').textContent = gameState.stress;
+            document.getElementById('finalContradictions').textContent = gameState.contradictions;
+            document.getElementById('verdictResult').textContent = '';
+            dialog.style.display = 'block';
+        }
+
+        function checkVerdict(userChoice) {
+            const resultElement = document.getElementById('verdictResult');
+            const correct = userChoice === gameState.suspect.isGuilty;
+            
+            document.getElementById('activeVerdictButtons').style.display = 'none';
+            
+            resultElement.textContent = correct ? 
+                "√√ CORRECT ASSESSMENT √√" : 
+                "×× INCORRECT DETERMINATION ××";
+            
+            resultElement.style.color = correct ? "#000080" : "#800000";
+            
+            resultElement.innerHTML += `<br><small>Suspect was actually ${gameState.suspect.isGuilty ? 'GUILTY' : 'INNOCENT'}<br>
+                Stress Thresholds Reached: ${Math.floor(gameState.stress/25) * 25}%<br>
+                Deception Patterns Detected: ${gameState.contradictions}</small>`;
+
+            if (!correct) {
+                gameState.lives--;
+                updateLivesDisplay();
+                
+                if (gameState.lives <= 0) {
+                    document.getElementById('verdictDialog').style.display = 'none';
+                    document.getElementById('gameOverScreen').style.display = 'block';
+                    return;
+                }
+            }
+
+            document.getElementById('nextCaseButton').style.display = 'block';
+        }
+
+        function handleNextCase() {
+            restartGame();
+            document.getElementById('nextCaseButton').style.display = 'none';
+            document.getElementById('activeVerdictButtons').style.display = 'flex';
+        }
+
+        function restartGame() {
+            document.getElementById('verdictDialog').style.display = 'none';
+            document.getElementById('questionInput').disabled = false;
+            gameState = {
+                lives: gameState.lives,
+                crime: null,
+                suspect: null,
+                disclosedEvidence: [],
+                contradictions: 0,
+                stress: 0,
+                timer: 360,
+                chatHistory: [],
+                interrogationPhase: 1
+            };
+            document.getElementById('chatLog').innerHTML = '';
+            initializeGame();
+        }
+
+        function updateLivesDisplay() {
+            const lives = ['life1', 'life2', 'life3'];
+            lives.forEach((lifeId, index) => {
+                const life = document.getElementById(lifeId);
+                life.classList.toggle('lost', index >= gameState.lives);
+            });
+        }
+
+        function startGame() {
+            document.getElementById('introPopup').style.display = 'none';
+            initializeGame();
+            updateLivesDisplay();
+        }
+
+        // Initial setup
+        makeDraggable(document.getElementById('introPopup'));
+        document.getElementById('introPopup').style.display = 'block';
+    </script>
+</body>
+</html>
