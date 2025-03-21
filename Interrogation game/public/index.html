@@ -630,121 +630,103 @@
         async function generateInterrogationResponse(question) {
             const interrogationFramework = gameState.suspect.isGuilty ? `
             You are ${gameState.suspect.name}, actually guilty. Follow these rules:
-            1. DECEPTION TECHNIQUES (USE 2+ PER RESPONSE):
-               - Strategic pauses (...)
-               - Verbal hedging ("I think", "maybe", "possibly")
-               - Answering questions with questions
-               - Overly specific/rambling details
-               - Moral justification ("I had no choice")
-               - Projection ("Others do worse!")
-               - Minimization ("It was just...")
+            1. Use deception tactics: ${gameState.suspect.deceptionPatterns.join(', ')}
+            2. Apply Reid Phase ${gameState.interrogationPhase} behavior: ${getReidPhaseBehavior(gameState.interrogationPhase)}
+            3. Stress Level ${gameState.stress}% effects: ${getStressEffects()}
+            4. Evidence Reaction: ${getEvidenceReaction(question)}
+            5. Tone Adaptation: ${getToneResponse(question)}
             
-            2. STRESS LEVEL ${gameState.stress}% EFFECTS:
-               ${gameState.stress < 30 ? "• Confident denials\n• Mock offense\n• Counter-accusations" :
-                gameState.stress < 60 ? "• Inconsistent details\n• Nervous laughter\n• Defensive posture" :
-                "• Contradictions\n• Emotional outbursts\n• Self-incriminating slips"}
-
-            3. PHASE ${gameState.interrogationPhase} BEHAVIOR:
-               ${getReidPhaseBehavior(gameState.interrogationPhase)}
-
-            4. EVIDENCE REACTIONS:
-               ${getEvidenceReaction(question)}
-
-            INCLUDE:
-            - 1 verbal tic per response (uh, um, well...)
-            - 1 emotional marker (voice cracking, sweating, fist-clenching)
-            - Vary sentence structure to avoid patterns` 
+            Include 2+ of:
+            - Strategic pauses (...)
+            - Verbal tics (uh, um)
+            - Deflection phrases
+            - Mirroring interrogator's words
+            - Emotional escalation markers` 
             : 
             `You are innocent. Respond with:
-            1. TRUTHFUL INDICATORS:
-               - Direct answers
-               - Consistent details
-               - Cooperative attitude
-               - Specific recall ("I was at... from 7-9PM")
-               - Willingness to provide verification
-            
-            2. CONFUSION PATTERNS:
-               - Genuine surprise at accusations
-               - Requests for clarification
-               - Logical counter-arguments
-               - Concern about reputation
-            
-            3. STRESS RESPONSES:
-               - Frustration at false accusations
-               - Confident body language
-               - Willingness to take polygraph`;
+            - Direct answers
+            - Consistent details
+            - Appropriate confusion
+            - Verifiable information`;
 
             const prompt = `${interrogationFramework}
             
-            CRIME CONTEXT: ${gameState.crime}
-            SUSPECT PROFILE: ${gameState.suspect.profile}
-            PREVIOUS ANSWERS: ${gameState.chatHistory.slice(-3).map(qa => qa.response).join(' | ')}
+            Crime Details: ${gameState.crime}
+            Suspect Profile: ${gameState.suspect.profile}
+            Previous Answers: ${gameState.chatHistory.slice(-3).map(qa => qa.response).join(' | ')}
             
-            RESPOND TO: "${question}"
-            FORMAT: 
-            - Keep under 2 sentences
-            - Add behavioral cues in [brackets]
-            - Mix statement types for realism`;
+            Respond to: "${question}"
+            Keep response under 2 sentences with psychological realism`;
 
             return await queryChatGPT(prompt);
         }
 
         function getReidPhaseBehavior(phase) {
             const phases = {
-                1: "Flat denials with closed posture",
-                2: "Passive resistance with sighing",
-                3: "Increasing verbal tics and pauses",
-                4: "Selective memory failures",
-                5: "Testing interrogator's knowledge",
-                6: "Angry outbursts and accusations",
-                7: "Partial admissions with excuses",
-                8: "Full confession with justification"
+                1: "Strong denial with closed body language",
+                2: "Partial agreement with moral justification",
+                3: "Increased avoidance and fidgeting",
+                4: "Quick explanations with shaky voice",
+                5: "False cooperation tactics",
+                6: "Emotional outbursts",
+                7: "Hesitant option choosing",
+                8: "Confession breakdown"
             };
-            return phases[phase] || "Neutral cooperation";
+            return phases[phase] || "Normal interrogation exchange";
+        }
+
+        function getStressEffects() {
+            return gameState.stress < 30 ? "Confident answers" :
+                   gameState.stress < 60 ? "Hesitant responses" :
+                   "Contradictions and emotional volatility";
+        }
+
+        function getEvidenceReaction(question) {
+            if(question.match(/evidence|proof/i)) {
+                gameState.stress += 15;
+                return "Panic denial: 'That's not possible!'";
+            }
+            if(question.match(/alibi|where were you/i)) {
+                gameState.stress += 10;
+                return "Revised story: 'I must have forgotten...'";
+            }
+            return "Default evasion pattern";
+        }
+
+        function getToneResponse(question) {
+            if(question.match(/please|help me understand/i)) {
+                return "Sympathetic opening: 'I want to cooperate...'";
+            }
+            if(question.match(/!|\bproof\b/i)) {
+                return "Defensive posture: 'Why are you accusing me?!'";
+            }
+            return "Neutral deflection";
         }
 
         function analyzeResponse(response) {
-            // Enhanced deception detection patterns
             const guiltMarkers = {
-                evasion: /\b(I (don't recall|might have)|maybe|possibly\b/gi,
-                minimization: /\b(just|only|merely|simply)\b/gi,
-                projection: /\b(others|someone else|they)\b/gi,
-                moralizing: /\b(had to|no choice|protecting)\b/gi,
-                stressCues: /\[.*?\]|\.{3}/g,
-                verbalTics: /\b(uh|um|er)\b/gi
+                evasion: /\b(I don't recall|maybe|possibly)\b/gi,
+                minimization: /\b(just|only|merely)\b/gi,
+                projection: /\b(someone else|they must have)\b/gi,
+                stress: /\.{3}|uh|um/gi
             };
 
             Object.entries(guiltMarkers).forEach(([type, regex]) => {
                 const matches = response.match(regex) || [];
                 gameState.contradictions += matches.length;
-                gameState.stress += matches.length * 
-                    {evasion: 7, minimization: 5, projection: 8, 
-                     moralizing: 6, stressCues: 4, verbalTics: 3}[type];
+                gameState.stress += matches.length * {evasion: 5, minimization: 3, projection: 8, stress: 2}[type];
             });
 
-            // Detect plausible innocent patterns
-            if(!gameState.suspect.isGuilty) {
-                const truthIndicators = response.match(/(specific time|witness name|document)/gi) || [];
-                gameState.stress -= truthIndicators.length * 3;
-            }
-
-            if(gameState.stress >= 85 && Math.random() < 0.4) {
-                induceBreakdown();
+            if(gameState.stress >= 80 && Math.random() < 0.3) {
+                induceConfession();
             }
 
             document.getElementById('stressLevel').textContent = Math.min(gameState.stress, 100);
             gameState.interrogationPhase = Math.min(8, Math.floor(gameState.stress/12.5));
         }
 
-        function induceBreakdown() {
-            const confessionTypes = {
-                1: "[voice shaking] Okay, okay... I did it, but it wasn't how you think!",
-                2: "[slams table] FINE! You want the truth? Here's your damn truth!",
-                3: "[breaks down crying] I... I never meant for anyone to get hurt...",
-                4: "[avoiding eye contact] What if... hypothetically... someone did do it?"
-            };
-            
-            const confession = confessionTypes[Math.ceil(Math.random()*4)];
+        function induceConfession() {
+            const confession = `(Voice breaking) Okay... I did it. ${gameState.crime.match(/Motive:\s*(.+?)(\n|$)/)[1]}`;
             gameState.chatHistory.push({question: "", response: confession});
             updateChat('', confession);
         }
@@ -862,7 +844,6 @@
             document.getElementById('introPopup').style.display = 'none';
             initializeGame();
             updateLivesDisplay();
-            document.getElementById('questionInput').focus();
         }
 
         // Initial setup
