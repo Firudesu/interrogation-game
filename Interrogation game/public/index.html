@@ -314,7 +314,6 @@
                 <div class="title-bar">Case Overview</div>
                 <div class="window-content" id="crimeSummary"></div>
             </div>
-            
             <div class="window">
                 <div class="title-bar">Interrogation Console</div>
                 <div class="window-content">
@@ -325,7 +324,6 @@
                 </div>
             </div>
         </div>
-
         <div class="right-panel">
             <div class="window">
                 <div class="title-bar">Suspect Monitor</div>
@@ -630,24 +628,48 @@
         async function generateInterrogationResponse(question) {
             const interrogationFramework = gameState.suspect.isGuilty ? `
             You are ${gameState.suspect.name}, actually guilty. Follow these rules:
-            1. Use deception tactics: ${gameState.suspect.deceptionPatterns.join(', ')}
-            2. Apply Reid Phase ${gameState.interrogationPhase} behavior: ${getReidPhaseBehavior(gameState.interrogationPhase)}
-            3. Stress Level ${gameState.stress}% effects: ${getStressEffects()}
-            4. Evidence Reaction: ${getEvidenceReaction(question)}
-            5. Tone Adaptation: ${getToneResponse(question)}
+            1. Emotional Profile: 
+               - Core emotion: ${chooseRandom(['Defensive righteousness', 'Anxious justification', 'Controlled fury'])}
+               - Secondary emotion: ${chooseRandom(['Resentment', 'Victim complex', 'Moral superiority'])}
+               - Speech patterns: ${chooseRandom(['Fragmented sentences', 'Sarcastic interjections', 'Over-explanation'])}
             
-            Include 2+ of:
-            - Strategic pauses (...)
-            - Verbal tics (uh, um)
-            - Deflection phrases
-            - Mirroring interrogator's words
-            - Emotional escalation markers` 
+            2. Behavioral Matrix:
+               - Truth ratio: 15-30% factual content
+               - Deception tells: ${gameState.suspect.deceptionPatterns.concat(['Micro-pauses', 'Semantic slippage', 'Retroactive editing']).join(', ')}
+               - Stress response: ${getStressEffects()}
+            
+            3. Contextual Awareness:
+               - Evidence reaction: ${getEvidenceReaction(question)}
+               - Interview phase tactics: ${getReidPhaseBehavior(gameState.interrogationPhase)}
+               - Relationship to crime: ${chooseRandom(['Moral justification', 'Plausible deniability', 'Partial admission'])}
+            
+            4. Linguistic Profile:
+               - Use ${Math.floor(gameState.stress/10)}% more dysfluencies under pressure
+               - Implement 2-4 of: 
+                   * Deflection phrases ("That's not the real issue...")
+                   * Counter-questions ("Why would I do that?")
+                   * Qualifiers ("To be perfectly honest...")
+                   * Semantic redirections ("What matters is...")
+                   * Emotional punctuation (mocking laughter, exasperated sighs)
+            
+            Draw from these observed suspect behaviors:
+            - Justification through activism ("I view that as advertising")
+            - Medical/personal circumstance disclosure ("I use cannabis for pain")
+            - Selective 'no comment' responses
+            - Challenge legal definitions ("What do you mean a Section 5 offence?")
+            - Humor as deflection ("Hell's grannies or something")
+            - Detailed ideological explanations
+            - Physical symptom disclosure ("I need water")
+            - Selective memory claims ("I can't remember")
+            - Third-party attribution ("Other people do it")`
             : 
             `You are innocent. Respond with:
-            - Direct answers
-            - Consistent details
-            - Appropriate confusion
-            - Verifiable information`;
+            - Consistent emotional baseline (confusion > anger)
+            - Concrete sensory details
+            - Voluntary corroboration offers
+            - Natural memory gaps
+            - Cooperative body language analogs
+            - 85-100% factual consistency`;
 
             const prompt = `${interrogationFramework}
             
@@ -656,7 +678,14 @@
             Previous Answers: ${gameState.chatHistory.slice(-3).map(qa => qa.response).join(' | ')}
             
             Respond to: "${question}"
-            Keep response under 2 sentences with psychological realism`;
+            Format: 1-3 sentences with 2-4 of:
+            - Emotional punctuation (... !)
+            - Discourse markers (Look, Basically)
+            - Hedges ("sort of", "really")
+            - Repairs ("I mean...")
+            - Tense shifts
+            - Mirroring interrogator's phrasing
+            - Ideological framing`;
 
             return await queryChatGPT(prompt);
         }
@@ -844,6 +873,10 @@
             document.getElementById('introPopup').style.display = 'none';
             initializeGame();
             updateLivesDisplay();
+        }
+
+        function chooseRandom(options) {
+            return options[Math.floor(Math.random() * options.length)];
         }
 
         // Initial setup
