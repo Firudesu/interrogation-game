@@ -428,8 +428,7 @@
             stress: 0,
             timer: 360,
             chatHistory: [],
-            interrogationPhase: 1,
-            coreTruth: null
+            interrogationPhase: 1
         };
 
         async function queryChatGPT(prompt) {
@@ -547,21 +546,17 @@
             try {
                 const suspectName = SUSPECT_NAMES[Math.floor(Math.random()*50)];
                 
-                const crimePrompt = `Generate police case file with:
-                - Case number (YYYY-######)
-                - Crime type (violent/non-violent felony)
-                - 100-word factual summary
-                - Physical evidence (3-5 items)
-                - Witness statements (2 statements with names)
-                - Clear factual timeline
-                Format as JSON: {case: string, summary: string, evidence: string[], witnesses: string[]}`;
+                const crimePrompt = `Generate detailed police case file with:
+                - Case number (format: YYYY-######)
+                - Crime type (burglary/homicide/kidnapping)
+                - 150-word incident summary with exact times/locations
+                - 3-5 physical/digital evidence items
+                - 2 witness statements with names/ages
+                - Primary suspect: ${suspectName}
+                - Clear motive opportunity
+                Format sections with headers: Case File, Incident Summary, Evidence, Witness Statements, Suspect Profile`;
                 
-                const crimeResponse = await queryChatGPT(crimePrompt);
-                const crimeData = JSON.parse(crimeResponse.replace(/```json/g,'').replace(/```/g,'').trim());
-                
-                gameState.crime = crimeData;
-                gameState.coreTruth = crimeData.summary;
-                
+                gameState.crime = await queryChatGPT(crimePrompt);
                 gameState.suspect = await generateSuspectProfile(suspectName);
                 
                 makeDraggable(document.getElementById('caseFile'));
@@ -578,62 +573,38 @@
         }
 
         async function generateSuspectProfile(name) {
-            const isGuilty = Math.random() > 0.5;
-            const profilePrompt = `Generate suspect profile for ${name} as ${isGuilty ? 'guilty' : 'innocent'}:
-            - Personality type (PragmaticLiar/IdealisticCrusader/ColdSociopath/AnxiousEveryman)
-            - Core motivation (15 words max)
-            - Key personality traits (3-5 adjectives)
-            - Moral framework (1 sentence)
-            - Speech patterns (sentence structure, common phrases, stress indicators)
-            - Known weaknesses (3 items)
-            - Deception style (if guilty)/Stress response (if innocent)
-            - Legal knowledge level (Basic/Intermediate/Expert)
-            - Stress triggers (3 items)
-            Format as JSON without markdown`;
-
             try {
-                const profileText = await queryChatGPT(profilePrompt);
-                const profile = JSON.parse(profileText.replace(/```json/g,'').replace(/```/g,'').trim());
+                const isGuilty = Math.random() > 0.5;
+                const prompt = `Create detailed suspect profile for ${name} with:
+                - Full name
+                - Sex (Male/Female/Other)
+                - Height (format: X'XX")
+                - Physical description (age, hair, distinguishing features)
+                - Psychological profile
+                - Known associates
+                - Criminal record (if any)
+                Format sections clearly without markdown`;
+
+                const profile = await queryChatGPT(prompt);
+                const deceptionMatch = profile.match(/deception tactics:\s*(.+?)(\n|$)/i);
                 
                 return {
                     name,
                     isGuilty,
                     profile,
-                    weaknesses: profile.knownWeaknesses || ['Memory gaps', 'Financial stress', 'Temper'],
-                    deceptionStyle: profile.deceptionStyle || 'Omission',
-                    legalKnowledge: profile.legalKnowledge || 'Basic',
-                    stressTriggers: profile.stressTriggers || ['Evidence timeline', 'Motive questions', 'Alibi details'],
-                    personality: {
-                        type: profile.personalityType || 'AnxiousEveryman',
-                        traits: profile.keyPersonalityTraits || ['Nervous', 'Honest', 'Forgetful'],
-                        morality: profile.moralFramework || 'Absolute honesty',
-                        speech: profile.speechPatterns || {
-                            sentence: 'Short, fragmented statements',
-                            phrases: ['"I think..."', '"Maybe..."'],
-                            stressIndicators: ['Voice cracking', 'Rapid blinking']
-                        }
-                    }
+                    stressTriggers: [],
+                    deceptionPatterns: deceptionMatch ? 
+                        deceptionMatch[1].split(/,\s*/) : 
+                        ['evasion', 'denial', 'deflection']
                 };
-            } catch(error) {
-                console.error('Profile generation failed:', error);
+            } catch (error) {
+                console.error('Profile generation error:', error);
                 return {
                     name,
-                    isGuilty,
+                    isGuilty: true,
                     profile: 'Error generating profile',
-                    weaknesses: ['Memory gaps', 'Financial stress', 'Temper'],
-                    deceptionStyle: 'Omission',
-                    legalKnowledge: 'Basic',
-                    stressTriggers: ['Evidence timeline', 'Motive questions', 'Alibi details'],
-                    personality: {
-                        type: isGuilty ? 'PragmaticLiar' : 'AnxiousEveryman',
-                        traits: isGuilty ? ['Calculating', 'Charming', 'Defensive'] : ['Nervous', 'Honest', 'Forgetful'],
-                        morality: isGuilty ? 'Ends justify means' : 'Absolute honesty',
-                        speech: {
-                            sentence: isGuilty ? 'Complex sentences with qualifiers' : 'Short, fragmented statements',
-                            phrases: isGuilty ? ['"To the best of my recollection"', '"That doesn\'t align with my understanding"'] : ['"I think..."', '"Maybe..."'],
-                            stressIndicators: isGuilty ? ['Extended pauses', 'Over-explanation'] : ['Voice cracking', 'Rapid blinking']
-                        }
-                    }
+                    stressTriggers: [],
+                    deceptionPatterns: ['evasion', 'denial', 'deflection']
                 };
             }
         }
@@ -657,115 +628,107 @@
         }
 
         async function generateInterrogationResponse(question) {
-            const suspect = gameState.suspect;
-            const memoryWindow = gameState.chatHistory.slice(-3);
+            const interrogationFramework = gameState.suspect.isGuilty ? `
+            You are ${gameState.suspect.name}, actually guilty. Follow these rules:
+            1. Use deception tactics: ${gameState.suspect.deceptionPatterns.join(', ')}
+            2. Apply Reid Phase ${gameState.interrogationPhase} behavior: ${getReidPhaseBehavior(gameState.interrogationPhase)}
+            3. Stress Level ${gameState.stress}% effects: ${getStressEffects()}
+            4. Evidence Reaction: ${getEvidenceReaction(question)}
+            5. Tone Adaptation: ${getToneResponse(question)}
             
-            const framework = `
-            ROLE: ${suspect.isGuilty ? 'Guilty Suspect' : 'Innocent Suspect'}
-            CORE TRUTH: ${gameState.coreTruth}
-            
-            SUSPECT PROFILE:
-            - Name: ${suspect.name}
-            - Personality: ${suspect.personality.type}
-            - Key Traits: ${suspect.personality.traits.join(', ')}
-            - Moral Framework: ${suspect.personality.morality}
-            - Known Weaknesses: ${suspect.weaknesses.join(', ')}
-            - Stress Level: ${gameState.stress}%
-            - Deception Pattern: ${suspect.deceptionStyle}
-            
-            CASE DETAILS:
-            ${gameState.crime}
-            
-            RESPONSE RULES:
-            1. ${suspect.isGuilty ? `
-                - Maintain plausible deniability while seeding alternative narratives
-                - Answer 70% truth / 30% lies (mix omission/distortion/fabrication)
-                - Exploit legal technicalities in ${suspect.legalKnowledge} law
-                - Trigger stress reactions when questioned about ${suspect.stressTriggers.join(' or ')}
-                ` : `
-                - Maintain 95% truthfulness with natural memory gaps
-                - Show confusion about specific crime details
-                - Provide verifiable alibi elements
-                `}
-            2. Personality-Driven Speech Patterns:
-               - Sentence structure: ${suspect.personality.speech.sentence}
-               - Common phrases: ${suspect.personality.speech.phrases}
-               - Stress tells: ${suspect.personality.speech.stressIndicators}
-            
-            3. Stress Management:
-               - Current stress: ${gameState.stress}%
-               - Stress response: ${getStressResponsePattern()}
-               - Pressure points: ${suspect.stressTriggers.join(', ')}
-            
-            4. Conversation History:
-               ${memoryWindow.map((qa, i) => `[${memoryWindow.length - i}] Q: ${qa.question}\n   A: ${qa.response}`).join('\n')}
-            
-            RESPOND TO: "${question}"
-            GUIDELINES:
-            - Never directly confess or deny
-            - Address ${suspect.isGuilty ? 'hidden motivations' : 'innocent context'}
-            - Include 2-4 natural speech imperfections
-            - Reference ${suspect.isGuilty ? 'alternative explanations' : 'personal experiences'}
-            - Maintain ${suspect.personality.type} personality consistency
-            - Respond in 1-3 sentences`;
+            Include 2+ of:
+            - Strategic pauses (...)
+            - Verbal tics (uh, um)
+            - Deflection phrases
+            - Mirroring interrogator's words
+            - Emotional escalation markers` 
+            : 
+            `You are innocent. Respond with:
+            - Direct answers
+            - Consistent details
+            - Appropriate confusion
+            - Verifiable information`;
 
-            return await queryChatGPT(framework);
+            const prompt = `${interrogationFramework}
+            
+            Crime Details: ${gameState.crime}
+            Suspect Profile: ${gameState.suspect.profile}
+            Previous Answers: ${gameState.chatHistory.slice(-3).map(qa => qa.response).join(' | ')}
+            
+            Respond to: "${question}"
+            Keep response under 2 sentences with psychological realism`;
+
+            return await queryChatGPT(prompt);
         }
 
-        function getStressResponsePattern() {
-            const stress = gameState.stress;
-            const suspect = gameState.suspect;
-            
-            if(suspect.isGuilty) {
-                return stress < 30 ? 'Confident manipulation' :
-                       stress < 60 ? 'Strategic deflection' :
-                       stress < 80 ? 'Controlled aggression' :
-                       'Breakdown risks';
-            } else {
-                return stress < 40 ? 'Cooperative confusion' :
-                       stress < 70 ? 'Defensive frustration' :
-                       'Panicked inconsistency';
+        function getReidPhaseBehavior(phase) {
+            const phases = {
+                1: "Strong denial with closed body language",
+                2: "Partial agreement with moral justification",
+                3: "Increased avoidance and fidgeting",
+                4: "Quick explanations with shaky voice",
+                5: "False cooperation tactics",
+                6: "Emotional outbursts",
+                7: "Hesitant option choosing",
+                8: "Confession breakdown"
+            };
+            return phases[phase] || "Normal interrogation exchange";
+        }
+
+        function getStressEffects() {
+            return gameState.stress < 30 ? "Confident answers" :
+                   gameState.stress < 60 ? "Hesitant responses" :
+                   "Contradictions and emotional volatility";
+        }
+
+        function getEvidenceReaction(question) {
+            if(question.match(/evidence|proof/i)) {
+                gameState.stress += 15;
+                return "Panic denial: 'That's not possible!'";
             }
+            if(question.match(/alibi|where were you/i)) {
+                gameState.stress += 10;
+                return "Revised story: 'I must have forgotten...'";
+            }
+            return "Default evasion pattern";
+        }
+
+        function getToneResponse(question) {
+            if(question.match(/please|help me understand/i)) {
+                return "Sympathetic opening: 'I want to cooperate...'";
+            }
+            if(question.match(/!|\bproof\b/i)) {
+                return "Defensive posture: 'Why are you accusing me?!'";
+            }
+            return "Neutral deflection";
         }
 
         function analyzeResponse(response) {
-            const suspect = gameState.suspect;
-            let stressDelta = 0;
-            
-            // Detect stress triggers in question
-            const lastQuestion = gameState.chatHistory[gameState.chatHistory.length-1]?.question || '';
-            const triggerHit = suspect.stressTriggers.some(trigger => 
-                lastQuestion.toLowerCase().includes(trigger.toLowerCase())
-            );
-            
-            if(triggerHit) {
-                stressDelta += suspect.isGuilty ? 25 : 15;
-            }
-            
-            // Analyze response characteristics
-            const guiltIndicators = suspect.isGuilty ? [
-                {regex: /(\bactually\b|\btechnically\b)/gi, weight: 3},
-                {regex: /(\bhowever\b|\bon the other hand\b)/gi, weight: 2},
-                {regex: /(\bas I said before\b)/gi, weight: 4}
-            ] : [];
-            
-            const innocenceIndicators = !suspect.isGuilty ? [
-                {regex: /(\bI think\b|\bmaybe\b)/gi, weight: 2},
-                {regex: /(\bcan't remember\b)/gi, weight: 3},
-                {regex: /(\bcheck the\b|\bverify\b)/gi, weight: -1}
-            ] : [];
-            
-            [...guiltIndicators, ...innocenceIndicators].forEach(indicator => {
-                const matches = response.match(indicator.regex) || [];
-                stressDelta += matches.length * indicator.weight;
+            const guiltMarkers = {
+                evasion: /\b(I don't recall|maybe|possibly)\b/gi,
+                minimization: /\b(just|only|merely)\b/gi,
+                projection: /\b(someone else|they must have)\b/gi,
+                stress: /\.{3}|uh|um/gi
+            };
+
+            Object.entries(guiltMarkers).forEach(([type, regex]) => {
+                const matches = response.match(regex) || [];
+                gameState.contradictions += matches.length;
+                gameState.stress += matches.length * {evasion: 5, minimization: 3, projection: 8, stress: 2}[type];
             });
-            
-            // Update stress with bounds
-            gameState.stress = Math.min(Math.max(gameState.stress + stressDelta, 0), 100);
-            
-            // Update UI
-            document.getElementById('stressLevel').textContent = gameState.stress;
+
+            if(gameState.stress >= 80 && Math.random() < 0.3) {
+                induceConfession();
+            }
+
+            document.getElementById('stressLevel').textContent = Math.min(gameState.stress, 100);
             gameState.interrogationPhase = Math.min(8, Math.floor(gameState.stress/12.5));
+        }
+
+        function induceConfession() {
+            const confession = `(Voice breaking) Okay... I did it. ${gameState.crime.match(/Motive:\s*(.+?)(\n|$)/)[1]}`;
+            gameState.chatHistory.push({question: "", response: confession});
+            updateChat('', confession);
         }
 
         function displayCaseSummary() {
@@ -863,8 +826,7 @@
                 stress: 0,
                 timer: 360,
                 chatHistory: [],
-                interrogationPhase: 1,
-                coreTruth: null
+                interrogationPhase: 1
             };
             document.getElementById('chatLog').innerHTML = '';
             initializeGame();
