@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -428,7 +429,8 @@
             stress: 0,
             timer: 360,
             chatHistory: [],
-            interrogationPhase: 1
+            interrogationPhase: 1,
+            coreTruth: null
         };
 
         async function queryChatGPT(prompt) {
@@ -441,6 +443,7 @@
                 const data = await response.json();
                 return data.content;
             } catch (error) {
+                console.error('API Error:', error);
                 return "SYSTEM ERROR: Failed to generate response";
             }
         }
@@ -546,7 +549,7 @@
             try {
                 const suspectName = SUSPECT_NAMES[Math.floor(Math.random()*50)];
                 
-                const crimePrompt = `Generate detailed police case file with:
+                const crimePrompt = `Generate police case file with:
                 - Case number (format: YYYY-######)
                 - Crime type (burglary/homicide/kidnapping)
                 - 150-word incident summary with exact times/locations
