@@ -428,6 +428,25 @@
             background: linear-gradient(145deg, #a8a8a8 0%, #c0c0c0 50%, #d4d0c8 100%);
         }
 
+        .verdict-button {
+            background: linear-gradient(145deg, #ffcc00 0%, #ff9900 50%, #cc7700 100%);
+            border: 2px solid;
+            border-color: #ffffff #404040 #404040 #ffffff;
+            padding: 6px 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'MS Sans Serif', sans-serif;
+            min-height: 32px;
+            color: #000;
+            margin-left: 10px;
+        }
+
+        .verdict-button:active {
+            border-color: #404040 #ffffff #ffffff #404040;
+            background: linear-gradient(145deg, #cc7700 0%, #ff9900 50%, #ffcc00 100%);
+        }
+
         .chat-message {
             margin: 4px 0;
             padding: 2px 0;
@@ -509,6 +528,7 @@
                     <div class="question-input-container">
                         <input type="text" id="questionInput" placeholder="Enter your question..." maxlength="200">
                         <button class="ask-button" onclick="askQuestion()">ASK</button>
+                        <button class="verdict-button" onclick="makeVerdict()">MAKE VERDICT</button>
                     </div>
                 </div>
             </div>
@@ -717,7 +737,14 @@
             personalityType: null,
             slipUpCount: 0,
             evidenceRevealed: [],
-            suspectKnowledge: null
+            suspectKnowledge: null,
+            evidenceResults: {
+                fingerprints: null, // 'match', 'no_match', 'unclear'
+                dna: null,
+                alibi: null,
+                witnesses: null,
+                cctv: null
+            }
         };
 
         // Simple AI query function for suspect interrogation only
@@ -729,7 +756,8 @@
                     suspectProfile: gameState.suspect?.profile || "",
                     crimeDetails: gameState.suspect?.isGuilty ? gameState.suspectKnowledge : null,
                     chatHistory: gameState.chatHistory.slice(-5), // Last 5 exchanges for context
-                    stressLevel: gameState.stress
+                    stressLevel: gameState.stress,
+                    evidenceResults: gameState.evidenceResults
                 };
 
                 const response = await fetch('/.netlify/functions/chat', {
@@ -1435,6 +1463,34 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
             return updatedCrime;
         }
 
+        // Generate evidence results based on guilt
+        function generateEvidenceResults(isGuilty) {
+            const evidence = gameState.evidenceResults;
+            
+            if (isGuilty) {
+                // Guilty suspects have more incriminating evidence, but not always clear-cut
+                evidence.fingerprints = Math.random() < 0.7 ? 'match' : (Math.random() < 0.5 ? 'unclear' : 'no_match');
+                evidence.dna = Math.random() < 0.6 ? 'match' : (Math.random() < 0.4 ? 'unclear' : 'no_match');
+                evidence.alibi = Math.random() < 0.8 ? 'weak' : 'unclear';
+                evidence.witnesses = Math.random() < 0.7 ? 'positive_id' : (Math.random() < 0.5 ? 'uncertain' : 'no_id');
+                evidence.cctv = Math.random() < 0.5 ? 'match' : (Math.random() < 0.6 ? 'unclear' : 'no_footage');
+            } else {
+                // Innocent suspects have less incriminating evidence
+                evidence.fingerprints = Math.random() < 0.3 ? 'match' : (Math.random() < 0.4 ? 'unclear' : 'no_match');
+                evidence.dna = Math.random() < 0.2 ? 'match' : (Math.random() < 0.3 ? 'unclear' : 'no_match');
+                evidence.alibi = Math.random() < 0.7 ? 'strong' : 'unclear';
+                evidence.witnesses = Math.random() < 0.4 ? 'positive_id' : (Math.random() < 0.6 ? 'uncertain' : 'no_id');
+                evidence.cctv = Math.random() < 0.3 ? 'match' : (Math.random() < 0.5 ? 'unclear' : 'no_footage');
+            }
+        }
+
+        // Make verdict function - skip to end game
+        function makeVerdict() {
+            if (confirm('Are you ready to make your verdict? This will end the interrogation.')) {
+                endGame();
+            }
+        }
+
         // Enhanced initialization
         async function initializeGame() {
             try {
@@ -1459,6 +1515,9 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
                 if (gameState.suspect.isGuilty) {
                     gameState.suspectKnowledge = gameState.crime;
                 }
+
+                // Generate evidence results
+                generateEvidenceResults(gameState.suspect.isGuilty);
                 
                 // Setup UI
                 displayCaseSummary();
@@ -1561,29 +1620,47 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
         }
 
         function updateEvidenceFile() {
+            const evidence = gameState.evidenceResults;
+            
+            const getResultText = (result) => {
+                switch(result) {
+                    case 'match': return '✓ POSITIVE MATCH';
+                    case 'no_match': return '✗ NO MATCH';
+                    case 'unclear': return '? INCONCLUSIVE';
+                    case 'weak': return '✗ WEAK/CONTRADICTORY';
+                    case 'strong': return '✓ VERIFIED';
+                    case 'positive_id': return '✓ POSITIVE IDENTIFICATION';
+                    case 'uncertain': return '? UNCERTAIN IDENTIFICATION';
+                    case 'no_id': return '✗ NO IDENTIFICATION';
+                    case 'no_footage': return '✗ NO USABLE FOOTAGE';
+                    default: return '? PENDING ANALYSIS';
+                }
+            };
+
             const content = document.getElementById('evidenceFileContent');
-            if (gameState.crime) {
-                // Extract evidence section from crime file
-                const evidenceMatch = gameState.crime.match(/(?:PHYSICAL EVIDENCE|Evidence|EVIDENCE)([\s\S]*?)(?=WITNESS|Witness|SUSPECT|INVESTIGATIVE|$)/i);
-                const witnessMatch = gameState.crime.match(/(?:WITNESS STATEMENTS|Witness|WITNESSES)([\s\S]*?)(?=SUSPECT|INVESTIGATIVE|NOTES|$)/i);
-                
-                let evidenceContent = '';
-                if (evidenceMatch) {
-                    evidenceContent += `<h4>PHYSICAL EVIDENCE:</h4><pre>${evidenceMatch[1].trim()}</pre>`;
-                }
-                if (witnessMatch) {
-                    evidenceContent += `<h4>WITNESS STATEMENTS:</h4><pre>${witnessMatch[1].trim()}</pre>`;
-                }
-                
-                content.innerHTML = `
-                    <div style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.4;">
-                        <h3 style="color: #000080; margin-top: 0;">EVIDENCE LOCKER</h3>
-                        ${evidenceContent || '<p>No evidence data available in current format.</p>'}
-                    </div>
-                `;
-            } else {
-                content.innerHTML = '<p>Evidence analysis in progress...</p>';
-            }
+            content.innerHTML = `
+                <div style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.4;">
+                    <h3 style="color: #000080; margin-top: 0;">EVIDENCE ANALYSIS REPORT</h3>
+                    <p><strong>Case:</strong> ${gameState.caseNumber || 'N/A'}</p>
+                    <p><strong>Suspect:</strong> ${gameState.suspect?.name || 'N/A'}</p>
+                    
+                    <h4>FORENSIC EVIDENCE:</h4>
+                    <pre>FINGERPRINT ANALYSIS: ${getResultText(evidence.fingerprints)}
+DNA ANALYSIS: ${getResultText(evidence.dna)}</pre>
+                    
+                    <h4>WITNESS EVIDENCE:</h4>
+                    <pre>WITNESS IDENTIFICATION: ${getResultText(evidence.witnesses)}
+ALIBI VERIFICATION: ${getResultText(evidence.alibi)}</pre>
+                    
+                    <h4>SURVEILLANCE EVIDENCE:</h4>
+                    <pre>CCTV ANALYSIS: ${getResultText(evidence.cctv)}</pre>
+                    
+                    <h4>INTERROGATION NOTES:</h4>
+                    <pre>Use this evidence to question the suspect.
+Present specific evidence and observe reactions.
+Strong evidence may cause stress spikes.</pre>
+                </div>
+            `;
         }
 
         // Timer and game flow

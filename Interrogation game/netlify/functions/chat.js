@@ -6,7 +6,7 @@ exports.handler = async (event) => {
     }
 
     try {
-        const { prompt, isGuilty, suspectProfile, crimeDetails, chatHistory, stressLevel } = JSON.parse(event.body);
+        const { prompt, isGuilty, suspectProfile, crimeDetails, chatHistory, stressLevel, evidenceResults } = JSON.parse(event.body);
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
         const messages = [
@@ -36,6 +36,14 @@ Your response:
 
 Your background: ${suspectProfile || 'No background provided'}`}
 
+EVIDENCE AGAINST YOU:
+${evidenceResults ? Object.entries(evidenceResults).map(([type, result]) => {
+    if (result === 'match' || result === 'positive_id' || result === 'weak') {
+        return `- ${type.toUpperCase()}: ${result.replace('_', ' ').toUpperCase()} ${isGuilty ? '(You need to explain this away or lie about it)' : '(This is confusing - you should be genuinely confused why evidence points to you)'}`;
+    }
+    return null;
+}).filter(Boolean).join('\n') : 'No evidence information available'}
+
 CRITICAL RULES:
 1. ALWAYS ANSWER basic questions (job, where you were, what you do, etc.) - ${isGuilty ? 'LIE convincingly if guilty' : 'be TRUTHFUL if innocent'}
 2. BE COOPERATIVE - real people answer police questions, they don't constantly deflect
@@ -59,12 +67,16 @@ HIGH STRESS EFFECTS:
 Previous conversation (STAY CONSISTENT with these answers):
 ${chatHistory ? chatHistory.map(chat => `DETECTIVE: ${chat.question}\nYOU: ${chat.response}`).join('\n') : 'No previous conversation'}
 
+PERSONALITY & CHARACTER:
+You must embody your specific personality type and background. Don't give generic responses - be this specific character with their unique traits, speech patterns, and reactions.
+
 RESPONSE FORMAT:
 - Start by directly answering the question asked
 - Keep responses under 100 words
-- Sound like a real person, not overly dramatic
+- Sound like a real person with your specific personality, not overly dramatic
 - ${isGuilty ? 'Lie about key details but answer the question' : 'Be truthful and provide helpful details'}
 - Don't deflect or redirect - answer first, then add character
+- Show your personality through word choice, tone, and reactions
 ${stressLevel > 80 ? '- AT VERY HIGH STRESS: You might accidentally contradict a previous answer or reveal something you shouldnt' : ''}
 
 MEMORY CHECK: Review your previous answers above and stay consistent unless stress causes you to slip up.
