@@ -5,22 +5,79 @@ exports.handler = async (event) => {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const { prompt } = JSON.parse(event.body);
+    const { prompt, context, isGuilty, suspectProfile, crimeDetails, chatHistory, stressLevel, interrogationPhase } = JSON.parse(event.body);
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     try {
+        // Build conversation context for better AI responses
+        const messages = [
+            {
+                role: "system",
+                content: `You are an AI playing a suspect in a police interrogation simulation. 
+
+${isGuilty ? 
+`You are GUILTY of the crime. You know all the details but will try to hide your guilt through:
+- Subtle lies and misdirection
+- Emotional manipulation
+- Partial truths mixed with lies
+- Defensive behavior when pressed
+- Slip-ups when stressed (stress level: ${stressLevel}%)
+- Contradictions that reveal guilt over time
+
+Crime Details You Know: ${crimeDetails}
+Your Profile: ${suspectProfile}
+
+Interrogation Phase ${interrogationPhase}: Show appropriate stress responses.
+` : 
+`You are INNOCENT of the crime. You don't know the crime details and respond with:
+- Honest confusion about accusations
+- Consistent, truthful answers
+- Appropriate emotional reactions to false accusations
+- Willingness to cooperate
+- Genuine attempts to help
+
+Your Profile: ${suspectProfile}
+`}
+
+Previous conversation context:
+${chatHistory ? chatHistory.map(chat => `Q: ${chat.question}\nA: ${chat.response}`).join('\n') : 'No previous conversation'}
+
+Respond naturally and stay in character. Keep responses under 150 words and include realistic speech patterns, pauses (...), and emotional reactions.`
+            },
+            {
+                role: "user",
+                content: prompt
+            }
+        ];
+
         const completion = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.7,
-            max_tokens: 500
+            model: "gpt-4",
+            messages: messages,
+            temperature: 0.8,
+            max_tokens: 200,
+            presence_penalty: 0.3,
+            frequency_penalty: 0.2
         });
 
         return {
             statusCode: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS'
+            },
             body: JSON.stringify({ content: completion.choices[0].message.content })
         };
     } catch (error) {
-        return { statusCode: 500, body: JSON.stringify({ error: 'AI service error' }) };
+        console.error('OpenAI API Error:', error);
+        return { 
+            statusCode: 500, 
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS'
+            },
+            body: JSON.stringify({ error: 'AI service error', details: error.message }) 
+        };
     }
 };
