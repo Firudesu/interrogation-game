@@ -1783,13 +1783,26 @@ Strong evidence may cause stress spikes.</pre>
                 personalityType: null,
                 slipUpCount: 0,
                 evidenceRevealed: [],
-                suspectKnowledge: null
+                suspectKnowledge: null,
+                evidenceResults: {
+                    fingerprints: null,
+                    dna: null,
+                    alibi: null,
+                    witnesses: null,
+                    cctv: null
+                }
             };
             
-                         // Clear UI
-             document.getElementById('chatLog').innerHTML = '';
-             document.getElementById('questionInput').disabled = false;
-             document.querySelector('.ask-button').disabled = false;
+                                     // Clear UI
+            document.getElementById('chatLog').innerHTML = '';
+            document.getElementById('questionInput').disabled = false;
+            document.querySelector('.ask-button').disabled = false;
+            document.getElementById('questionInput').value = '';
+            
+            // Clear file windows
+            document.getElementById('caseFileContent').innerHTML = '';
+            document.getElementById('suspectFileContent').innerHTML = '';
+            document.getElementById('evidenceFileContent').innerHTML = '';
              
              // Restart
              setupKeyboardSupport();

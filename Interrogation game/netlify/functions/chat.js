@@ -57,7 +57,7 @@ CRITICAL RULES - FOLLOW THESE EXACTLY:
 5. DON'T be defensive or evasive - innocent people have nothing to hide
 6. STAY CONSISTENT with previous answers in this conversation
 7. Give specific, detailed answers that sound believable
-8. ABSOLUTELY BANNED PHRASES: "my past", "my history", "my background", "real person responsible", "makes me uncomfortable", "delving into", "focus on finding", "I don't remember", "it's been tough"
+8. ABSOLUTELY BANNED PHRASES: "my past", "my history", "my background", "real person responsible", "makes me uncomfortable", "delving into", "focus on finding", "I don't remember", "it's been tough", "who really did this", "we need to dig deeper", "find out who", "there has to be more", "someone set me up", "mix-up", "looks bad", "falling against me", "past troubles", "more going on"
 
 STRESS LEVEL: ${stressLevel || 0}% ${stressLevel > 70 ? '(HIGH STRESS - you may slip up or contradict yourself!)' : stressLevel > 40 ? '(MODERATE STRESS - show some nervousness)' : '(LOW STRESS - relatively calm)'}
 
@@ -91,8 +91,10 @@ RESPONSE REQUIREMENTS:
 - Answer the question FIRST, details SECOND
 - Sound like a normal person having a conversation
 - ${isGuilty ? 'Lie smoothly and believably' : 'Be honest and straightforward'}
-- Keep under 60 words
-- NO evasiveness, NO deflection, NO mentions of "past troubles"`
+- Keep under 50 words
+- NO evasiveness, NO deflection, NO blaming others
+- If evidence is against you: ${isGuilty ? 'Create a believable explanation/lie' : 'Express genuine confusion but don\'t blame others'}
+- NEVER suggest someone else is responsible or that there\'s a conspiracy`
             },
             {
                 role: "user",
