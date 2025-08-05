@@ -17,7 +17,7 @@ exports.handler = async (event) => {
             messages = [
                 {
                     role: "system",
-                    content: "You are a police case file generator. Generate realistic, detailed police case files with proper formatting and procedural information."
+                    content: "You are a professional police case file generator system. Your ONLY job is to generate realistic, detailed police case files with proper formatting and procedural information. You are NOT playing a suspect or character - you are a document generation system. Generate complete, professional police reports with all required sections."
                 },
                 {
                     role: "user",
