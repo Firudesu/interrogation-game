@@ -34,7 +34,12 @@ Your response:
 - Want to assist the investigation
 - Display appropriate emotional reactions to false accusations
 
-Your background: ${suspectProfile || 'No background provided'}`}
+Your background: ${suspectProfile || 'No background provided'}
+
+${isGuilty ? `CRIME LOCATION AND DETAILS YOU MUST REMEMBER:
+${crimeDetails ? `The crime occurred at: ${crimeDetails.match(/Location: (.+)/)?.[1] || 'the location mentioned in the case file'}
+Crime type: ${crimeDetails.match(/Crime Type: (.+)/)?.[1] || 'the crime mentioned in the case file'}
+You must be consistent about this location and crime type in all your responses. Do not mention other locations unless directly related to your alibi.` : 'You know the crime details from the case file.'}` : ''}`}
 
 EVIDENCE AGAINST YOU:
 ${evidenceResults ? Object.entries(evidenceResults).map(([type, result]) => {

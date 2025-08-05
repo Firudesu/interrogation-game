@@ -848,7 +848,19 @@
             do {
                 victimName = victimNames[Math.floor(Math.random() * victimNames.length)];
             } while (victimName.split(' ')[0] === suspectName.split(' ')[0]); // Compare first names
-            const streetAddress = `${Math.floor(Math.random() * 9999) + 1} ${location}`;
+            // Create a realistic address based on the location type
+            let streetAddress;
+            if (location.includes('apartment') || location.includes('home')) {
+                streetAddress = `${Math.floor(Math.random() * 9999) + 1} ${['Oak Street', 'Main Street', 'Elm Avenue', 'Pine Road', 'Maple Drive'][Math.floor(Math.random() * 5)]} - ${location}`;
+            } else {
+                streetAddress = location; // Use the specific location name (like "Gas Station", "First National Bank")
+            }
+            
+            // Fix timeline formatting and victim reporting logic
+            const timeComponents = timeFrame.split(' ');
+            const baseTime = timeComponents.length > 1 ? timeComponents[0] : '2:00 PM';
+            const isHomicide = template.type.toLowerCase().includes('homicide') || template.type.toLowerCase().includes('murder');
+            const whoReported = isHomicide ? 'a witness' : `the victim, ${victimName},`;
             
             const crimeResult = `POLICE CASE FILE
 Case Number: ${caseNumber}
@@ -857,16 +869,16 @@ Crime Type: ${template.type}
 Location: ${streetAddress}
 
 CASE SUMMARY:
-On ${new Date().toLocaleDateString()} at approximately ${timeFrame}, a ${template.type} occurred at ${streetAddress}. The victim, ${victimName}, reported the incident to police. Initial investigation has identified John Placeholder as the primary suspect based on witness testimony and physical evidence. The motive appears to be ${motive}. This case requires immediate attention due to the serious nature of the charges and available evidence.
+On ${new Date().toLocaleDateString()} at approximately ${timeFrame}, a ${template.type} occurred at ${streetAddress}. ${isHomicide ? `The victim, ${victimName}, was found deceased at the scene. The incident was` : `The incident was`} reported to police by ${whoReported}. Initial investigation has identified John Placeholder as the primary suspect based on witness testimony and physical evidence. The motive appears to be ${motive}. This case requires immediate attention due to the serious nature of the charges and available evidence.
 
 INCIDENT TIMELINE:
-- ${timeFrame}: Initial incident occurs at ${streetAddress}
-- ${timeFrame.split(' ')[0]} + 30 minutes: Victim contacts emergency services
-- ${timeFrame.split(' ')[0]} + 45 minutes: First responders arrive on scene
-- ${timeFrame.split(' ')[0]} + 1 hour: Crime scene secured and investigation begins
-- ${timeFrame.split(' ')[0]} + 2 hours: Evidence collection completed
-- ${timeFrame.split(' ')[0]} + 3 hours: Witness interviews conducted
-- ${timeFrame.split(' ')[0]} + 4 hours: Suspect identified as John Placeholder
+- ${baseTime}: Initial incident occurs at ${streetAddress}
+- ${baseTime.replace(/(\d+):(\d+)/, (match, h, m) => `${parseInt(h)}:${(parseInt(m) + 30).toString().padStart(2, '0')}`)} : Emergency services contacted
+- ${baseTime.replace(/(\d+):(\d+)/, (match, h, m) => `${parseInt(h)}:${(parseInt(m) + 45).toString().padStart(2, '0')}`)} : First responders arrive on scene
+- ${baseTime.replace(/(\d+):(\d+)/, (match, h, m) => `${parseInt(h) + 1}:${m}`)} : Crime scene secured and investigation begins
+- ${baseTime.replace(/(\d+):(\d+)/, (match, h, m) => `${parseInt(h) + 2}:${m}`)} : Evidence collection completed
+- ${baseTime.replace(/(\d+):(\d+)/, (match, h, m) => `${parseInt(h) + 3}:${m}`)} : Witness interviews conducted
+- ${baseTime.replace(/(\d+):(\d+)/, (match, h, m) => `${parseInt(h) + 4}:${m}`)} : Suspect identified as John Placeholder
 
 PHYSICAL EVIDENCE:
 ${evidenceItems.map((item, index) => `- Evidence Item ${index + 1}: ${item} - collected and logged for analysis`).join('\n')}
