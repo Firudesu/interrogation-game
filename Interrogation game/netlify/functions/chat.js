@@ -5,18 +5,10 @@ exports.handler = async (event) => {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    try {
-        const body = JSON.parse(event.body || '{}');
-        const { prompt, requestType = 'interrogation' } = body;
-        
-        if (!prompt) {
-            return { 
-                statusCode: 400, 
-                body: JSON.stringify({ error: 'Prompt is required' }) 
-            };
-        }
+    const { prompt, context, isGuilty, suspectProfile, crimeDetails, chatHistory, stressLevel, interrogationPhase, requestType } = JSON.parse(event.body);
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    try {
         let messages = [];
         
         // Handle different request types
@@ -25,7 +17,7 @@ exports.handler = async (event) => {
             messages = [
                 {
                     role: "system",
-                    content: "You are a professional police case file generator system. Your ONLY job is to generate realistic, detailed police case files with proper formatting and procedural information. You are NOT playing a suspect or character - you are a document generation system. Generate complete, professional police reports with all required sections."
+                    content: "You are a professional police case file generator. Generate realistic, detailed police case files with proper formatting and procedural information. You are NOT a suspect - you are generating official police documents."
                 },
                 {
                     role: "user",
@@ -37,7 +29,7 @@ exports.handler = async (event) => {
             messages = [
                 {
                     role: "system",
-                    content: "You are a professional police psychological profiler system. Your ONLY job is to generate detailed suspect profiles with background information, personality traits, and behavioral analysis. You are NOT playing a suspect or character - you are a profiling system that creates documents. Generate complete, professional psychological assessments."
+                    content: "You are a professional police psychological profiler. Generate detailed suspect profiles with background information, personality traits, and behavioral analysis. You are NOT a suspect - you are generating official police profiles."
                 },
                 {
                     role: "user",
@@ -45,8 +37,7 @@ exports.handler = async (event) => {
                 }
             ];
         } else {
-            // For suspect interrogation responses - get additional parameters
-            const { isGuilty, suspectProfile, crimeDetails, chatHistory, stressLevel, interrogationPhase } = body;
+            // For suspect interrogation responses
             
             messages = [
                 {

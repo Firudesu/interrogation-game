@@ -720,63 +720,13 @@
             suspectKnowledge: null
         };
 
-        // Separate functions for different AI requests
-        async function generateCaseFile(prompt) {
+        // Enhanced AI query function with different request types
+        async function queryChatGPT(prompt, requestType = 'interrogation', context = {}) {
             try {
                 const requestData = {
                     prompt: prompt,
-                    requestType: 'case_generation'
-                };
-
-                const response = await fetch('/.netlify/functions/chat', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(requestData)
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                return data.content;
-            } catch (error) {
-                console.error('Case Generation Error:', error);
-                return "Error generating case file";
-            }
-        }
-
-        async function generateSuspectProfile(prompt) {
-            try {
-                const requestData = {
-                    prompt: prompt,
-                    requestType: 'suspect_profile'
-                };
-
-                const response = await fetch('/.netlify/functions/chat', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(requestData)
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                return data.content;
-            } catch (error) {
-                console.error('Profile Generation Error:', error);
-                return "Error generating suspect profile";
-            }
-        }
-
-        // Suspect interrogation AI query function
-        async function querySuspectAI(prompt) {
-            try {
-                const requestData = {
-                    prompt: prompt,
-                    requestType: 'interrogation',
+                    requestType: requestType,
+                    context: context,
                     isGuilty: gameState.suspect?.isGuilty || false,
                     suspectProfile: gameState.suspect?.profile || "",
                     crimeDetails: gameState.suspect?.isGuilty ? gameState.suspectKnowledge : null,
@@ -865,12 +815,12 @@
 
             CRITICAL: Generate the ENTIRE case file. Do not stop mid-sentence. Include all sections completely.`;
 
-            let crimeResult = await generateCaseFile(crimePrompt);
+            let crimeResult = await queryChatGPT(crimePrompt, 'case_generation');
             
             // Check if the generation was cut off and retry if needed
             if (crimeResult.length < 500 || !crimeResult.includes('INVESTIGATIVE NOTES')) {
                 console.log('Crime generation appears incomplete, retrying...');
-                crimeResult = await generateCaseFile(crimePrompt + '\n\nIMPORTANT: Ensure you complete ALL 6 sections fully.');
+                crimeResult = await queryChatGPT(crimePrompt + '\n\nIMPORTANT: Ensure you complete ALL 6 sections fully.', 'case_generation');
             }
             
             return crimeResult;
@@ -952,7 +902,7 @@
 
             Make this person feel real with specific details, quirks, and believable background information. The dark secret should be woven naturally into their background. Format as an official police psychological assessment. MUST use the exact name "${name}" and gender "${gender}" throughout.`;
 
-             const profile = await generateSuspectProfile(profilePrompt);
+             const profile = await queryChatGPT(profilePrompt, 'suspect_profile');
              
              // Create pressure point keywords that will trigger stress
              const pressureKeywords = [
@@ -1103,7 +1053,7 @@
               
               Respond in character with realistic speech patterns, showing the complex emotions of someone with secrets being interrogated. Keep under 120 words.`;
 
-                           return await querySuspectAI(responsePrompt);
+                           return await queryChatGPT(responsePrompt, 'interrogation');
          }
 
         // Enhanced slip-up detection system
@@ -1157,7 +1107,7 @@
                 setTimeout(() => {
                     const confessionPrompt = `Generate a confession or major slip-up for ${gameState.suspect.name}. They've reached their breaking point under interrogation. Make it emotional and believable, revealing key details about the crime. Keep it under 150 words.`;
                     
-                                         querySuspectAI(confessionPrompt).then(confession => {
+                                         queryChatGPT(confessionPrompt, 'interrogation').then(confession => {
                          addChatMessage('suspect', confession);
                          gameState.stress = Math.min(100, gameState.stress + 40);
                          updateStressDisplay();
