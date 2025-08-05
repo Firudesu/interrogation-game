@@ -778,89 +778,211 @@
             return await queryChatGPT(crimePrompt);
         }
 
-        // Enhanced suspect generation with personality integration
-        async function generateEnhancedSuspect(name) {
-            const isGuilty = Math.random() > 0.4; // 60% chance of guilt for more interesting gameplay
-            const personalityType = PERSONALITY_TYPES[Math.floor(Math.random() * PERSONALITY_TYPES.length)];
-            
-            const profilePrompt = `Create a detailed psychological profile for suspect ${name} with the following personality type: ${personalityType.name}
+                 // Enhanced suspect generation with personality integration and pressure points
+         async function generateEnhancedSuspect(name) {
+             const isGuilty = Math.random() > 0.4; // 60% chance of guilt for more interesting gameplay
+             const personalityType = PERSONALITY_TYPES[Math.floor(Math.random() * PERSONALITY_TYPES.length)];
+             
+             // Generate dark secrets/pressure points for all suspects
+             const darkSecrets = [
+                 "Has gambling addiction and owes money to dangerous people",
+                 "Had an affair that could destroy their marriage",
+                 "Has been embezzling money from their employer",
+                 "Has a history of domestic violence they've hidden",
+                 "Is illegally in the country and fears deportation",
+                 "Has been selling drugs to pay for medical bills",
+                 "Was abused as a child and has violent tendencies",
+                 "Has been lying about their education/credentials",
+                 "Has a restraining order against them from an ex",
+                 "Has been stealing from family members",
+                 "Has a serious mental illness they're hiding",
+                 "Has been involved in insurance fraud",
+                 "Has a criminal record they've been hiding",
+                 "Has been blackmailing someone",
+                 "Has been involved in tax evasion"
+             ];
+             
+             const suspectHistory = [
+                 "Previously arrested for shoplifting as a teenager",
+                 "Has a history of bar fights and public intoxication",
+                 "Was fired from previous job for misconduct",
+                 "Has been in rehab multiple times for addiction",
+                 "Has a history of restraining orders",
+                 "Previously investigated for fraud but not charged",
+                 "Has been evicted multiple times for non-payment",
+                 "Has a history of mental health hospitalizations",
+                 "Previously arrested for driving under the influence",
+                 "Has been involved in multiple civil lawsuits",
+                 "Has a history of workplace harassment complaints",
+                 "Previously investigated for domestic violence",
+                 "Has been arrested for public disturbance",
+                 "Has a history of financial problems and bankruptcy",
+                 "Previously caught lying on official documents"
+             ];
+             
+             const selectedSecret = darkSecrets[Math.floor(Math.random() * darkSecrets.length)];
+             const selectedHistory = suspectHistory[Math.floor(Math.random() * suspectHistory.length)];
+             
+             const profilePrompt = `Create a detailed psychological profile for suspect ${name} with the following personality type: ${personalityType.name}
 
-            Personality Traits: ${personalityType.traits.join(', ')}
-            
-            Include:
-            1. BASIC INFORMATION (Name, Age, Sex, Height, Weight, Build)
-            2. PHYSICAL DESCRIPTION (Hair, Eyes, Distinguishing marks, Clothing style)
-            3. PSYCHOLOGICAL PROFILE (Personality traits, behavioral patterns, triggers)
-            4. BACKGROUND (Education, Employment, Family, Criminal history)
-            5. KNOWN ASSOCIATES (Friends, family, criminal contacts)
-            6. BEHAVIORAL ANALYSIS (How they handle stress, deception patterns, weaknesses)
-            7. INTERROGATION NOTES (Recommended approach, potential pressure points)
+             Personality Traits: ${personalityType.traits.join(', ')}
+             
+             IMPORTANT: This suspect has the following background elements that create stress when mentioned:
+             - Dark Secret/Pressure Point: ${selectedSecret}
+             - Criminal/Personal History: ${selectedHistory}
+             
+             Include:
+             1. BASIC INFORMATION (Name, Age, Sex, Height, Weight, Build)
+             2. PHYSICAL DESCRIPTION (Hair, Eyes, Distinguishing marks, Clothing style)
+             3. PSYCHOLOGICAL PROFILE (Personality traits, behavioral patterns, triggers)
+             4. BACKGROUND (Education, Employment, Family, Criminal history - include the provided history)
+             5. KNOWN ASSOCIATES (Friends, family, criminal contacts)
+             6. BEHAVIORAL ANALYSIS (How they handle stress, deception patterns, weaknesses)
+             7. PRESSURE POINTS (Things that make them uncomfortable - include the dark secret)
+             8. INTERROGATION NOTES (Recommended approach, potential pressure points)
 
-            Make this person feel real with specific details, quirks, and believable background information. Format as an official police psychological assessment.`;
+             Make this person feel real with specific details, quirks, and believable background information. The dark secret should be woven naturally into their background. Format as an official police psychological assessment.`;
 
-            const profile = await queryChatGPT(profilePrompt);
-            
-            return {
-                name,
-                isGuilty,
-                profile,
-                personalityType,
-                stressTriggers: personalityType.slipUpTriggers,
-                currentStressLevel: 0,
-                slipUpThreshold: Math.random() * 30 + 50, // Between 50-80% stress
-                hasSlippedUp: false
-            };
-        }
+             const profile = await queryChatGPT(profilePrompt);
+             
+             // Create pressure point keywords that will trigger stress
+             const pressureKeywords = [
+                 ...extractKeywordsFromSecret(selectedSecret),
+                 ...extractKeywordsFromHistory(selectedHistory),
+                 ...personalityType.slipUpTriggers
+             ];
+             
+             return {
+                 name,
+                 isGuilty,
+                 profile,
+                 personalityType,
+                 darkSecret: selectedSecret,
+                 criminalHistory: selectedHistory,
+                 pressurePoints: pressureKeywords,
+                 stressTriggers: personalityType.slipUpTriggers,
+                 currentStressLevel: 0,
+                 slipUpThreshold: Math.random() * 30 + 50, // Between 50-80% stress
+                 hasSlippedUp: false
+             };
+         }
 
-        // Enhanced interrogation response system
-        async function generateInterrogationResponse(question) {
-            const personality = gameState.suspect.personalityType;
-            const isGuilty = gameState.suspect.isGuilty;
-            const stressLevel = gameState.stress;
-            
-            // Determine behavioral context
-            const behaviorContext = isGuilty ? 
-                personality.guiltyBehavior[Math.floor(Math.random() * personality.guiltyBehavior.length)] :
-                personality.innocentBehavior[Math.floor(Math.random() * personality.innocentBehavior.length)];
+         // Extract keywords from dark secrets and history for stress triggers
+         function extractKeywordsFromSecret(secret) {
+             const keywords = [];
+             if (secret.includes('gambling')) keywords.push('gambling', 'money', 'debt', 'casino');
+             if (secret.includes('affair')) keywords.push('marriage', 'wife', 'husband', 'relationship', 'cheating');
+             if (secret.includes('embezzling')) keywords.push('money', 'work', 'employer', 'stealing', 'finances');
+             if (secret.includes('violence')) keywords.push('anger', 'fight', 'hurt', 'violence', 'aggressive');
+             if (secret.includes('drugs')) keywords.push('drugs', 'selling', 'addiction', 'medical');
+             if (secret.includes('abuse')) keywords.push('childhood', 'family', 'anger', 'violence');
+             if (secret.includes('lying')) keywords.push('education', 'job', 'credentials', 'truth');
+             if (secret.includes('restraining')) keywords.push('ex', 'relationship', 'harassment', 'stalking');
+             if (secret.includes('stealing')) keywords.push('family', 'money', 'theft', 'trust');
+             if (secret.includes('mental')) keywords.push('health', 'medication', 'therapy', 'hospital');
+             if (secret.includes('fraud')) keywords.push('insurance', 'money', 'scam', 'lying');
+             if (secret.includes('blackmail')) keywords.push('secrets', 'money', 'threats', 'information');
+             if (secret.includes('tax')) keywords.push('taxes', 'money', 'government', 'IRS');
+             return keywords;
+         }
 
-            const stressResponse = personality.stressResponses[Math.min(Math.floor(stressLevel / 25), personality.stressResponses.length - 1)];
+         function extractKeywordsFromHistory(history) {
+             const keywords = [];
+             if (history.includes('shoplifting')) keywords.push('stealing', 'theft', 'arrest', 'teenager');
+             if (history.includes('fights')) keywords.push('violence', 'anger', 'drinking', 'bar');
+             if (history.includes('fired')) keywords.push('job', 'work', 'misconduct', 'employer');
+             if (history.includes('rehab')) keywords.push('addiction', 'drugs', 'alcohol', 'treatment');
+             if (history.includes('restraining')) keywords.push('harassment', 'stalking', 'ex', 'relationship');
+             if (history.includes('fraud')) keywords.push('money', 'scam', 'investigation', 'charges');
+             if (history.includes('evicted')) keywords.push('rent', 'money', 'home', 'payment');
+             if (history.includes('mental health')) keywords.push('hospital', 'medication', 'therapy', 'illness');
+             if (history.includes('driving')) keywords.push('drinking', 'alcohol', 'driving', 'arrest');
+             if (history.includes('lawsuit')) keywords.push('legal', 'court', 'money', 'problems');
+             if (history.includes('harassment')) keywords.push('work', 'women', 'inappropriate', 'complaints');
+             if (history.includes('domestic')) keywords.push('violence', 'family', 'anger', 'abuse');
+             if (history.includes('disturbance')) keywords.push('public', 'anger', 'police', 'arrest');
+             if (history.includes('bankruptcy')) keywords.push('money', 'debt', 'financial', 'problems');
+             if (history.includes('documents')) keywords.push('lying', 'fraud', 'official', 'truth');
+             return keywords;
+         }
 
-            // Check for slip-up triggers
-            const hasSlipUpTrigger = personality.slipUpTriggers.some(trigger => 
-                question.toLowerCase().includes(trigger.toLowerCase())
-            );
+                 // Enhanced interrogation response system with pressure points
+         async function generateInterrogationResponse(question) {
+             const personality = gameState.suspect.personalityType;
+             const isGuilty = gameState.suspect.isGuilty;
+             const stressLevel = gameState.stress;
+             const questionLower = question.toLowerCase();
+             
+             // Check if question hits pressure points
+             const pressurePointHit = gameState.suspect.pressurePoints?.some(keyword => 
+                 questionLower.includes(keyword.toLowerCase())
+             );
 
-            let responsePrompt = `You are ${gameState.suspect.name}, a ${personality.name} personality type.
+             // Determine behavioral context
+             const behaviorContext = isGuilty ? 
+                 personality.guiltyBehavior[Math.floor(Math.random() * personality.guiltyBehavior.length)] :
+                 personality.innocentBehavior[Math.floor(Math.random() * personality.innocentBehavior.length)];
 
-            Current Context:
-            - Stress Level: ${stressLevel}%
-            - Interrogation Phase: ${gameState.interrogationPhase}
-            - Behavioral Pattern: ${behaviorContext}
-            - Stress Response: ${stressResponse}
-            - Question: "${question}"
-            
-            ${isGuilty ? `
-            You ARE guilty and know these crime details: ${gameState.suspectKnowledge}
-            
-            Your goal is to avoid confession while staying in character. You may:
-            - Lie convincingly but occasionally slip up under stress
-            - Show behavioral patterns consistent with your personality
-            - React to evidence mentions with increased stress
-            - Make small contradictions when stressed
-            ` : `
-            You are INNOCENT and don't know the crime details. Respond with:
-            - Genuine confusion about accusations
-            - Consistent truthful answers
-            - Appropriate emotional reactions to false accusations
-            - Desire to help catch the real criminal
-            `}
+             const stressResponse = personality.stressResponses[Math.min(Math.floor(stressLevel / 25), personality.stressResponses.length - 1)];
 
-            ${hasSlipUpTrigger ? 'This question triggers your stress response - you may slip up or reveal something!' : ''}
-            
-            Respond in character with realistic speech patterns, emotional reactions, and behavioral consistency. Keep under 100 words.`;
+             // Check for slip-up triggers
+             const hasSlipUpTrigger = personality.slipUpTriggers.some(trigger => 
+                 questionLower.includes(trigger.toLowerCase())
+             );
 
-            return await queryChatGPT(responsePrompt);
-        }
+             let responsePrompt = `You are ${gameState.suspect.name}, a ${personality.name} personality type.
+
+             IMPORTANT BACKGROUND:
+             - Dark Secret: ${gameState.suspect.darkSecret}
+             - Criminal History: ${gameState.suspect.criminalHistory}
+             - These are sensitive topics that make you uncomfortable and defensive
+
+             Current Context:
+             - Stress Level: ${stressLevel}%
+             - Interrogation Phase: ${gameState.interrogationPhase}
+             - Behavioral Pattern: ${behaviorContext}
+             - Stress Response: ${stressResponse}
+             - Question: "${question}"
+             
+             ${pressurePointHit ? `
+             ⚠️ PRESSURE POINT HIT: This question touches on your sensitive areas (dark secret or history).
+             Even if you're innocent of THIS crime, you're nervous about your secrets being exposed.
+             React with increased anxiety, defensiveness, or deflection.
+             ` : ''}
+             
+             ${isGuilty ? `
+             You ARE guilty of the current crime and know these details: ${gameState.suspectKnowledge}
+             
+             Your dual challenge:
+             1. Hide your guilt for THIS crime
+             2. Keep your dark secrets hidden
+             
+             You may:
+             - Lie about the crime while being defensive about personal matters
+             - Show stress from both guilt AND embarrassment about your past
+             - Make contradictions when overwhelmed by multiple pressures
+             - Accidentally reveal crime details when distracted by personal questions
+             ` : `
+             You are INNOCENT of the current crime and don't know the crime details.
+             
+             However, you have secrets you don't want exposed:
+             - Your dark secret makes you nervous and defensive
+             - Your criminal history makes you look suspicious
+             - You may seem guilty even though you're innocent of THIS crime
+             
+             React with:
+             - Genuine confusion about the crime accusations
+             - Defensive behavior about personal matters
+             - Worry that your past makes you look guilty
+             - Desire to help but fear of exposing your secrets
+             `}
+
+             ${hasSlipUpTrigger ? 'This question also triggers your personality-based stress responses!' : ''}
+             
+             Respond in character with realistic speech patterns, showing the complex emotions of someone with secrets being interrogated. Keep under 120 words.`;
+
+             return await queryChatGPT(responsePrompt);
+         }
 
         // Enhanced slip-up detection system
         function analyzeResponseForSlipUps(response, question) {
@@ -990,45 +1112,84 @@
             }
         }
 
-        // Enhanced stress system
-        function updateStressFromQuestion(question) {
-            const stressFactors = {
-                'evidence': 15,
-                'proof': 20,
-                'witness': 12,
-                'caught': 25,
-                'lie': 18,
-                'truth': 10,
-                'alibi': 14,
-                'where were you': 16,
-                'why did you': 22,
-                'confess': 30
-            };
+                 // Enhanced balanced stress system with pressure points
+         function updateStressFromQuestion(question) {
+             const questionLower = question.toLowerCase();
+             let stressIncrease = 3; // Reduced base stress per question
+             let pressurePointHit = false;
+             let stressReason = "";
 
-            let stressIncrease = 5; // Base stress per question
-            
-            Object.entries(stressFactors).forEach(([trigger, increase]) => {
-                if (question.toLowerCase().includes(trigger)) {
-                    stressIncrease += increase;
-                }
-            });
+             // Check for pressure point keywords (higher stress increase)
+             if (gameState.suspect.pressurePoints) {
+                 gameState.suspect.pressurePoints.forEach(keyword => {
+                     if (questionLower.includes(keyword.toLowerCase())) {
+                         stressIncrease += 20; // Significant stress for pressure points
+                         pressurePointHit = true;
+                         stressReason = `Pressure point triggered: ${keyword}`;
+                     }
+                 });
+             }
 
-            // Apply personality modifier
-            if (gameState.suspect.personalityType) {
-                const personalityModifier = {
-                    'Narcissistic Manipulator': 0.8,
-                    'Anxious Pleaser': 1.5,
-                    'Cold Calculator': 0.6,
-                    'Defensive Aggressor': 1.2,
-                    'Broken Victim': 1.8
-                }[gameState.suspect.personalityType.name] || 1.0;
-                
-                stressIncrease *= personalityModifier;
-            }
+             // General interrogation stress factors (lower increases)
+             const stressFactors = {
+                 'evidence': 8,
+                 'proof': 10,
+                 'witness': 6,
+                 'caught': 12,
+                 'lie': 9,
+                 'truth': 5,
+                 'alibi': 7,
+                 'where were you': 8,
+                 'why did you': 10,
+                 'confess': 15,
+                 'guilty': 12,
+                 'innocent': 5,
+                 'arrest': 10,
+                 'court': 8,
+                 'prison': 12,
+                 'family': 6,
+                 'children': 8,
+                 'job': 5,
+                 'money': 7
+             };
 
-            gameState.stress = Math.min(100, gameState.stress + Math.round(stressIncrease));
-            gameState.contradictions++;
-        }
+             // Only apply general stress if no pressure point was hit
+             if (!pressurePointHit) {
+                 Object.entries(stressFactors).forEach(([trigger, increase]) => {
+                     if (questionLower.includes(trigger)) {
+                         stressIncrease += increase;
+                         if (!stressReason) stressReason = `General interrogation pressure: ${trigger}`;
+                     }
+                 });
+             }
+
+             // Apply personality modifier (more balanced)
+             if (gameState.suspect.personalityType) {
+                 const personalityModifier = {
+                     'Narcissistic Manipulator': 0.9,  // Slightly resistant
+                     'Anxious Pleaser': 1.3,           // More sensitive
+                     'Cold Calculator': 0.7,           // Very resistant
+                     'Defensive Aggressor': 1.1,       // Slightly more reactive
+                     'Broken Victim': 1.4              // Most sensitive
+                 }[gameState.suspect.personalityType.name] || 1.0;
+                 
+                 stressIncrease *= personalityModifier;
+             }
+
+             // Add some randomness to make it less predictable
+             stressIncrease += Math.random() * 3 - 1.5; // ±1.5 random variance
+
+             const finalIncrease = Math.max(1, Math.round(stressIncrease));
+             gameState.stress = Math.min(100, gameState.stress + finalIncrease);
+             gameState.contradictions++;
+
+             // Provide feedback about what caused stress (but not always)
+             if (pressurePointHit && Math.random() < 0.7) {
+                 addSystemMessage(`⚠️ STRESS SPIKE DETECTED: Subject shows heightened anxiety (+${finalIncrease}%)`);
+             } else if (finalIncrease > 15 && Math.random() < 0.4) {
+                 addSystemMessage(`📈 ELEVATED STRESS: Subject reacting strongly to line of questioning (+${finalIncrease}%)`);
+             }
+         }
 
         function updateStressDisplay() {
             document.getElementById('stressLevel').textContent = Math.round(gameState.stress);
@@ -1057,13 +1218,17 @@
             }
         }
 
-        // Enhanced live feed
-        function updateLiveFeed() {
-            const cam = document.getElementById('suspectCam');
-            const time = new Date().toLocaleTimeString();
-            const stressStatus = getEnhancedStressStatus();
-            
-            cam.innerHTML = `
+                 // Enhanced live feed
+         function updateLiveFeed() {
+             const cam = document.getElementById('suspectCam');
+             const time = new Date().toLocaleTimeString();
+             const stressStatus = getEnhancedStressStatus();
+             
+             // Calculate background stress indicators
+             const backgroundStress = gameState.suspect?.pressurePoints ? 'DETECTED' : 'SCANNING';
+             const vulnerabilityLevel = gameState.stress > 60 ? 'HIGH' : gameState.stress > 30 ? 'MODERATE' : 'LOW';
+             
+             cam.innerHTML = `
 [LIVE FEED: INTERROGATION ROOM 3A]
 [ENHANCED MONITORING SYSTEM ACTIVE]
 
@@ -1072,16 +1237,19 @@
 > STRESS: ${Math.round(gameState.stress)}%
 > PHASE: ${gameState.interrogationPhase}/8
 > PERSONALITY: ${gameState.suspect?.personalityType?.name || 'Analyzing...'}
+> VULNERABILITY: ${vulnerabilityLevel}
+> BACKGROUND ISSUES: ${backgroundStress}
 > SLIP-UPS: ${gameState.slipUpCount}
 > TIMESTAMP: ${time}
 
 ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 - Math.floor(gameState.stress / 3)))}
 
-[BEHAVIORAL ANALYSIS ACTIVE]
-[PSYCHOLOGICAL PROFILING: ENABLED]
-[LIE DETECTION: MONITORING]
-            `;
-        }
+[BEHAVIORAL ANALYSIS: ACTIVE]
+[PRESSURE POINT DETECTION: ENABLED]
+[PSYCHOLOGICAL PROFILING: RUNNING]
+[DECEPTION ANALYSIS: MONITORING]
+             `;
+         }
 
         function getEnhancedStressStatus() {
             if (gameState.stress > 90) return '🔴 CRITICAL - BREAKDOWN IMMINENT';
@@ -1126,25 +1294,28 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
                 makeDraggable(document.getElementById('suspectFile'));
                 makeDraggable(document.getElementById('evidenceFile'));
                 
-                addSystemMessage('✅ System ready - Begin interrogation');
-                document.getElementById('questionInput').focus();
-                
-            } catch (error) {
-                console.error('Initialization error:', error);
-                addSystemMessage('❌ System initialization failed - Check console');
-            }
+                                 addSystemMessage('✅ System ready - Begin interrogation');
+                 setupKeyboardSupport();
+                 document.getElementById('questionInput').focus();
+                 
+             } catch (error) {
+                 console.error('Initialization error:', error);
+                 addSystemMessage('❌ System initialization failed - Check console');
+             }
         }
 
-        function updatePersonalityIndicator() {
-            const indicator = document.getElementById('personalityIndicator');
-            if (gameState.personalityType) {
-                indicator.innerHTML = `
-                    <strong>PERSONALITY PROFILE:</strong> ${gameState.personalityType.name}<br>
-                    <strong>TRAITS:</strong> ${gameState.personalityType.traits.join(', ')}<br>
-                    <strong>STRESS TRIGGERS:</strong> ${gameState.personalityType.slipUpTriggers.join(', ')}
-                `;
-            }
-        }
+                 function updatePersonalityIndicator() {
+             const indicator = document.getElementById('personalityIndicator');
+             if (gameState.personalityType && gameState.suspect) {
+                 indicator.innerHTML = `
+                     <strong>PERSONALITY PROFILE:</strong> ${gameState.personalityType.name}<br>
+                     <strong>TRAITS:</strong> ${gameState.personalityType.traits.join(', ')}<br>
+                     <strong>BEHAVIORAL TRIGGERS:</strong> ${gameState.personalityType.slipUpTriggers.join(', ')}<br>
+                     <strong>BACKGROUND ISSUES:</strong> Subject has undisclosed personal matters<br>
+                     <strong>PRESSURE POINTS:</strong> ${gameState.suspect.pressurePoints ? gameState.suspect.pressurePoints.slice(0, 5).join(', ') + '...' : 'Analyzing...'}
+                 `;
+             }
+         }
 
         function displayCaseSummary() {
             const summary = gameState.crime.substring(0, 800) + '...';
@@ -1308,13 +1479,14 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
                 suspectKnowledge: null
             };
             
-            // Clear UI
-            document.getElementById('chatLog').innerHTML = '';
-            document.getElementById('questionInput').disabled = false;
-            document.querySelector('.ask-button').disabled = false;
-            
-            // Restart
-            initializeGame();
+                         // Clear UI
+             document.getElementById('chatLog').innerHTML = '';
+             document.getElementById('questionInput').disabled = false;
+             document.querySelector('.ask-button').disabled = false;
+             
+             // Restart
+             setupKeyboardSupport();
+             initializeGame();
         }
 
         function updateLivesDisplay() {
@@ -1367,14 +1539,32 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
             updateLivesDisplay();
         }
 
-        // Keyboard support
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('questionInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    askQuestion();
-                }
-            });
-        });
+                 // Enhanced keyboard support
+         function setupKeyboardSupport() {
+             const questionInput = document.getElementById('questionInput');
+             if (questionInput) {
+                 // Remove any existing listeners
+                 questionInput.removeEventListener('keydown', handleKeyDown);
+                 questionInput.removeEventListener('keypress', handleKeyPress);
+                 
+                 // Add new listeners
+                 questionInput.addEventListener('keydown', handleKeyDown);
+                 questionInput.addEventListener('keypress', handleKeyPress);
+             }
+         }
+
+         function handleKeyDown(e) {
+             if (e.key === 'Enter' && !e.shiftKey) {
+                 e.preventDefault();
+                 askQuestion();
+             }
+         }
+
+         function handleKeyPress(e) {
+             if (e.key === 'Enter' && !e.shiftKey) {
+                 e.preventDefault();
+             }
+         }
 
         // Initial setup
         makeDraggable(document.getElementById('introPopup'));
