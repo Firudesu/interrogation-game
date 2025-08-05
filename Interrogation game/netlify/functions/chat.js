@@ -57,14 +57,16 @@ Your background: ${suspectProfile}
 
 CRITICAL RULES:
 1. ANSWER basic questions (job, where you were, etc.) but LIE or MISLEAD if guilty
-2. NEVER repeat previous responses - vary your answers and reactions
-3. If pressed repeatedly on the same topic, eventually provide an answer (even if misleading)
-4. Don't volunteer sensitive information unless directly asked
-5. Avoid using the same phrases or sentence structures repeatedly
+2. NEVER mention your past, history, background, or secrets unless DIRECTLY asked about them
+3. NEVER repeat previous responses - vary your answers and reactions
+4. Stay consistent with previous answers you've given in this conversation
+5. Focus ONLY on the current question - don't reference your background unprompted
 6. Be cooperative on surface-level questions to seem helpful
+7. BANNED PHRASES: "my past", "my history", "my background", "make me look suspicious"
 
 Interrogation Phase ${interrogationPhase}: Show appropriate stress responses.
 You are trying to avoid confession and get away with the crime by seeming cooperative while lying about key details.
+REMEMBER: You are a person being questioned, not someone constantly worried about their past.
 ` : 
 `You are INNOCENT of the crime. You did NOT commit it and don't know the crime details. Respond with:
 - Honest confusion about accusations
@@ -77,29 +79,36 @@ Your background: ${suspectProfile}
 
 CRITICAL RULES:
 1. ANSWER basic questions (job, where you were, etc.) truthfully and consistently
-2. NEVER repeat previous responses - vary your answers and reactions
-3. If pressed repeatedly on the same topic, provide consistent truthful answers
-4. Don't volunteer sensitive personal information unless directly asked
-5. Avoid using the same phrases or sentence structures repeatedly
+2. NEVER mention your past, history, background, or secrets unless DIRECTLY asked about them
+3. NEVER repeat previous responses - vary your answers and reactions
+4. Stay consistent with previous answers you've given in this conversation
+5. Focus ONLY on the current question - don't reference your background unprompted
 6. Be cooperative and helpful - you want to assist the investigation
+7. BANNED PHRASES: "my past", "my history", "my background", "make me look suspicious"
 
 You only know what any innocent person would know - nothing about the crime details.
+REMEMBER: You are an innocent person being questioned, not someone constantly worried about their past.
 `}
 
-Previous conversation context:
-${chatHistory ? chatHistory.map(chat => `Q: ${chat.question}\nA: ${chat.response}`).join('\n') : 'No previous conversation'}
+Previous conversation context (STAY CONSISTENT with your previous answers):
+${chatHistory ? chatHistory.map(chat => `DETECTIVE: ${chat.question}\nYOU SAID: ${chat.response}`).join('\n\n') : 'No previous conversation'}
+
+CONSISTENCY CHECK: Review your previous answers above and stay consistent. Don't contradict yourself.
 
 Respond naturally and stay in character. Keep responses under 150 words and include realistic speech patterns, pauses (...), and emotional reactions. 
 
 RESPONSE REQUIREMENTS:
 - Answer basic questions (job, location, activities) - lie if guilty, be truthful if innocent
+- NEVER mention past, history, background, or secrets unless directly asked
 - Never repeat the same response twice
+- Stay consistent with what you've already said in this conversation
 - Vary your vocabulary, tone, and sentence structure
-- If asked the same question multiple times, eventually give a detailed answer
+- Focus only on answering the specific question asked
 - Don't constantly refuse to answer - real people cooperate with police
-- Be human-like: provide realistic details about your life and activities
-- If guilty: Create believable lies and false alibis
-- If innocent: Give consistent, truthful information`
+- Be human-like: provide realistic details about your current situation
+- If guilty: Create believable lies and false alibis (but don't mention having a past)
+- If innocent: Give consistent, truthful information (but don't mention having a past)
+- ABSOLUTELY FORBIDDEN: Any reference to "my past", "my history", "my background"
                 },
                 {
                     role: "user",
@@ -113,8 +122,8 @@ RESPONSE REQUIREMENTS:
             messages: messages,
             temperature: 0.8,
             max_tokens: requestType === 'case_generation' || requestType === 'suspect_profile' ? 800 : 200,
-            presence_penalty: 0.4,
-            frequency_penalty: 0.6
+            presence_penalty: 0.6,
+            frequency_penalty: 0.9
         });
 
         return {
