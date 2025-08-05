@@ -720,26 +720,17 @@
             suspectKnowledge: null
         };
 
-        // Enhanced AI query function with different request types
-        async function queryChatGPT(prompt, requestType = 'interrogation', context = {}) {
+        // Simple AI query function for suspect interrogation only
+        async function queryChatGPT(prompt) {
             try {
-                let requestData = {
+                const requestData = {
                     prompt: prompt,
-                    requestType: requestType
+                    isGuilty: gameState.suspect?.isGuilty || false,
+                    suspectProfile: gameState.suspect?.profile || "",
+                    crimeDetails: gameState.suspect?.isGuilty ? gameState.suspectKnowledge : null,
+                    chatHistory: gameState.chatHistory.slice(-5), // Last 5 exchanges for context
+                    stressLevel: gameState.stress
                 };
-
-                // Only add suspect-specific parameters for interrogation
-                if (requestType === 'interrogation') {
-                    requestData = {
-                        ...requestData,
-                        isGuilty: gameState.suspect?.isGuilty || false,
-                        suspectProfile: gameState.suspect?.profile || "",
-                        crimeDetails: gameState.suspect?.isGuilty ? gameState.suspectKnowledge : null,
-                        chatHistory: gameState.chatHistory.slice(-5), // Last 5 exchanges for context
-                        stressLevel: gameState.stress,
-                        interrogationPhase: gameState.interrogationPhase
-                    };
-                }
 
                 const response = await fetch('/.netlify/functions/chat', {
                     method: 'POST',
@@ -821,13 +812,51 @@
 
             CRITICAL: Generate the ENTIRE case file. Do not stop mid-sentence. Include all sections completely.`;
 
-            let crimeResult = await queryChatGPT(crimePrompt, 'case_generation');
+            // Generate static crime details (no AI needed for documents)
+            const victimNames = ["Robert Martinez", "Sarah Thompson", "Michael Johnson", "Emily Davis", "David Wilson"];
+            const victimName = victimNames[Math.floor(Math.random() * victimNames.length)];
+            const streetAddress = `${Math.floor(Math.random() * 9999) + 1} ${location}`;
             
-            // Check if the generation was cut off and retry if needed
-            if (crimeResult.length < 500 || !crimeResult.includes('INVESTIGATIVE NOTES')) {
-                console.log('Crime generation appears incomplete, retrying...');
-                crimeResult = await queryChatGPT(crimePrompt + '\n\nIMPORTANT: Ensure you complete ALL 6 sections fully.', 'case_generation');
-            }
+            const crimeResult = `POLICE CASE FILE
+Case Number: ${caseNumber}
+Date: ${new Date().toLocaleDateString()}
+Crime Type: ${template.type}
+Location: ${streetAddress}
+
+CASE SUMMARY:
+On ${new Date().toLocaleDateString()} at approximately ${timeFrame}, a ${template.type} occurred at ${streetAddress}. The victim, ${victimName}, reported the incident to police. Initial investigation has identified John Placeholder as the primary suspect based on witness testimony and physical evidence. The motive appears to be ${motive}. This case requires immediate attention due to the serious nature of the charges and available evidence.
+
+INCIDENT TIMELINE:
+- ${timeFrame}: Initial incident occurs at ${streetAddress}
+- ${timeFrame.split(' ')[0]} + 30 minutes: Victim contacts emergency services
+- ${timeFrame.split(' ')[0]} + 45 minutes: First responders arrive on scene
+- ${timeFrame.split(' ')[0]} + 1 hour: Crime scene secured and investigation begins
+- ${timeFrame.split(' ')[0]} + 2 hours: Evidence collection completed
+- ${timeFrame.split(' ')[0]} + 3 hours: Witness interviews conducted
+- ${timeFrame.split(' ')[0]} + 4 hours: Suspect identified as John Placeholder
+
+PHYSICAL EVIDENCE:
+${evidenceItems.map((item, index) => `- Evidence Item ${index + 1}: ${item} - collected and logged for analysis`).join('\n')}
+- Photographs of the crime scene
+- Victim statement and medical report
+- Security footage from nearby cameras
+
+WITNESS STATEMENTS:
+Witness 1 - Maria Rodriguez (555-0123): "I saw someone matching the suspect's description in the area around the time of the incident. They seemed nervous and kept looking around."
+
+Witness 2 - James Peterson (555-0456): "I heard commotion and saw the suspect leaving the scene quickly. They were definitely acting suspicious."
+
+Witness 3 - Linda Chen (555-0789): "I can confirm seeing John Placeholder in the vicinity during the timeframe. Something about their behavior seemed off."
+
+SUSPECT INFORMATION:
+Primary Suspect: John Placeholder
+- Identified through witness testimony and physical evidence
+- Has connection to the victim and/or location
+- Motive established as: ${motive}
+- Currently being sought for questioning
+
+INVESTIGATIVE NOTES:
+The evidence strongly suggests John Placeholder's involvement in this ${template.type}. Multiple witnesses have placed the suspect at the scene during the time of the incident. Physical evidence supports the witness accounts. The established motive of ${motive} provides clear reasoning for the crime. Recommend immediate apprehension and questioning of the suspect. Case priority: HIGH.`;
             
             return crimeResult;
         }
@@ -908,7 +937,55 @@
 
             Make this person feel real with specific details, quirks, and believable background information. The dark secret should be woven naturally into their background. Format as an official police psychological assessment. MUST use the exact name "${name}" and gender "${gender}" throughout.`;
 
-             const profile = await queryChatGPT(profilePrompt, 'suspect_profile');
+             // Generate static profile (no AI needed for documents)
+            const ages = [22, 25, 28, 31, 34, 37, 40, 43, 46, 49];
+            const age = ages[Math.floor(Math.random() * ages.length)];
+            const heights = ["5'6\"", "5'7\"", "5'8\"", "5'9\"", "5'10\"", "6'0\""];
+            const height = heights[Math.floor(Math.random() * heights.length)];
+            const weights = ["140 lbs", "155 lbs", "170 lbs", "185 lbs", "200 lbs"];
+            const weight = weights[Math.floor(Math.random() * weights.length)];
+            
+            const profile = `PSYCHOLOGICAL PROFILE - ${name}
+
+BASIC INFORMATION:
+Name: ${name}
+Gender: ${gender}
+Age: ${age}
+Height: ${height}
+Weight: ${weight}
+Build: Average
+
+PHYSICAL DESCRIPTION:
+Hair: Brown
+Eyes: Brown
+Distinguishing marks: None noted
+Clothing style: Casual, unremarkable
+
+PSYCHOLOGICAL PROFILE:
+Personality Type: ${personalityType.name}
+Traits: ${personalityType.traits.join(', ')}
+Behavioral Patterns: Shows typical stress responses under pressure. May become defensive when questioned about sensitive topics.
+
+BACKGROUND:
+Education: High school graduate
+Employment: Various jobs, currently unemployed/underemployed
+Family: Limited family contact
+Criminal History: ${selectedHistory}
+
+KNOWN ASSOCIATES:
+Limited social circle, mostly acquaintances from work and neighborhood.
+
+BEHAVIORAL ANALYSIS:
+Under stress, this individual tends to become defensive and may attempt to deflect questions. Shows signs of anxiety when discussing personal matters. Has difficulty maintaining eye contact when uncomfortable.
+
+PRESSURE POINTS:
+- Financial difficulties
+- Personal relationships
+- Past mistakes
+- ${selectedSecret}
+
+INTERROGATION NOTES:
+Recommend direct but non-threatening approach. Subject may respond better to empathetic questioning. Be prepared for defensive responses when discussing sensitive topics. Monitor for signs of stress and potential deception.`;
              
              // Create pressure point keywords that will trigger stress
              const pressureKeywords = [
@@ -1059,7 +1136,7 @@
               
               Respond in character with realistic speech patterns, showing the complex emotions of someone with secrets being interrogated. Keep under 120 words.`;
 
-                           return await queryChatGPT(responsePrompt, 'interrogation');
+                           return await queryChatGPT(responsePrompt);
          }
 
         // Enhanced slip-up detection system
@@ -1113,7 +1190,7 @@
                 setTimeout(() => {
                     const confessionPrompt = `Generate a confession or major slip-up for ${gameState.suspect.name}. They've reached their breaking point under interrogation. Make it emotional and believable, revealing key details about the crime. Keep it under 150 words.`;
                     
-                                         queryChatGPT(confessionPrompt, 'interrogation').then(confession => {
+                                         queryChatGPT(confessionPrompt).then(confession => {
                          addChatMessage('suspect', confession);
                          gameState.stress = Math.min(100, gameState.stress + 40);
                          updateStressDisplay();
