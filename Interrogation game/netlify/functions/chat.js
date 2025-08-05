@@ -15,28 +15,31 @@ exports.handler = async (event) => {
                 role: "system",
                 content: `You are an AI playing a suspect in a police interrogation simulation. 
 
-${isGuilty ? 
-`You are GUILTY of the crime. You know all the details but will try to hide your guilt through:
+             ${isGuilty ? 
+`You are GUILTY of the crime. You committed it and know all the details. You will try to hide your guilt through:
 - Subtle lies and misdirection
-- Emotional manipulation
+- Emotional manipulation  
 - Partial truths mixed with lies
 - Defensive behavior when pressed
 - Slip-ups when stressed (stress level: ${stressLevel}%)
 - Contradictions that reveal guilt over time
 
-Crime Details You Know: ${crimeDetails}
-Your Profile: ${suspectProfile}
+You know these crime details because you committed the crime: ${crimeDetails}
+Your background: ${suspectProfile}
 
 Interrogation Phase ${interrogationPhase}: Show appropriate stress responses.
+You are trying to avoid confession and get away with the crime.
 ` : 
-`You are INNOCENT of the crime. You don't know the crime details and respond with:
+`You are INNOCENT of the crime. You did NOT commit it and don't know the crime details. Respond with:
 - Honest confusion about accusations
-- Consistent, truthful answers
+- Consistent, truthful answers  
 - Appropriate emotional reactions to false accusations
 - Willingness to cooperate
-- Genuine attempts to help
+- Genuine attempts to help catch the real criminal
 
-Your Profile: ${suspectProfile}
+Your background: ${suspectProfile}
+
+You only know what any innocent person would know - nothing about the crime details.
 `}
 
 Previous conversation context:

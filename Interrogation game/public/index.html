@@ -115,7 +115,8 @@
         }
 
         #chatLog {
-            height: calc(40vh - 100px);
+            height: 250px;
+            max-height: 250px;
             background: #000;
             color: #00ff00;
             font-family: 'Courier New', monospace;
@@ -1030,8 +1031,10 @@
                     
                     gameState.stress += stressIncrease;
                     
-                    // Add system message about slip-up
-                    addSystemMessage(`⚠️ BEHAVIORAL ANALYSIS: Detected ${type.replace('_', ' ')} - Stress increased by ${stressIncrease}%`);
+                                         // Minimal feedback about behavioral changes
+                     if (Math.random() < 0.4) {
+                         addSystemMessage(`📊 Behavioral change detected`);
+                     }
                 }
             });
 
@@ -1041,13 +1044,12 @@
                 setTimeout(() => {
                     const confessionPrompt = `Generate a confession or major slip-up for ${gameState.suspect.name}. They've reached their breaking point under interrogation. Make it emotional and believable, revealing key details about the crime. Keep it under 150 words.`;
                     
-                    queryChatGPT(confessionPrompt).then(confession => {
-                        addChatMessage('system', '🚨 MAJOR BREAKTHROUGH DETECTED');
-                        addChatMessage('suspect', confession);
-                        gameState.stress = Math.min(100, gameState.stress + 40);
-                        updateStressDisplay();
-                        updateLiveFeed();
-                    });
+                                         queryChatGPT(confessionPrompt).then(confession => {
+                         addChatMessage('suspect', confession);
+                         gameState.stress = Math.min(100, gameState.stress + 40);
+                         updateStressDisplay();
+                         updateLiveFeed();
+                     });
                 }, 2000);
             }
 
@@ -1191,11 +1193,9 @@
              gameState.stress = Math.min(100, gameState.stress + finalIncrease);
              gameState.contradictions++;
 
-             // Provide feedback about what caused stress (but not always)
-             if (pressurePointHit && Math.random() < 0.7) {
-                 addSystemMessage(`⚠️ STRESS SPIKE DETECTED: Subject shows heightened anxiety (+${finalIncrease}%)`);
-             } else if (finalIncrease > 15 && Math.random() < 0.4) {
-                 addSystemMessage(`📈 ELEVATED STRESS: Subject reacting strongly to line of questioning (+${finalIncrease}%)`);
+             // Provide minimal feedback about stress changes
+             if (finalIncrease > 20 && Math.random() < 0.3) {
+                 addSystemMessage(`📈 Subject showing signs of stress`);
              }
          }
 
@@ -1210,18 +1210,9 @@
                 gameState.interrogationPhase = newPhase;
                 document.getElementById('interrogationPhase').textContent = newPhase;
                 
-                const phaseMessages = {
-                    2: "Subject showing initial stress responses",
-                    3: "Behavioral changes detected",
-                    4: "Increased agitation observed",
-                    5: "Subject entering defensive phase",
-                    6: "High stress indicators present",
-                    7: "Critical stress threshold reached",
-                    8: "Subject approaching breaking point"
-                };
-                
-                if (phaseMessages[newPhase]) {
-                    addSystemMessage(`📊 PHASE ${newPhase}: ${phaseMessages[newPhase]}`);
+                // Minimal phase change notification
+                if (newPhase >= 6 && Math.random() < 0.5) {
+                    addSystemMessage(`📊 Interrogation phase ${newPhase}`);
                 }
             }
         }
@@ -1285,9 +1276,6 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
                 // If guilty, create knowledge base
                 if (gameState.suspect.isGuilty) {
                     gameState.suspectKnowledge = gameState.crime;
-                    addSystemMessage('🎭 Subject has knowledge of crime details');
-                } else {
-                    addSystemMessage('✅ Subject is innocent - no crime knowledge');
                 }
                 
                 // Setup UI
@@ -1303,7 +1291,6 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
                 makeDraggable(document.getElementById('evidenceFile'));
                 
                                                  addSystemMessage('✅ System ready - Begin interrogation');
-                addSystemMessage('💬 Type your questions in the input box below and press Enter or click ASK');
                 setupKeyboardSupport();
                 
                 // Ensure input box is visible and focused
@@ -1322,18 +1309,15 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
              }
         }
 
-                 function updatePersonalityIndicator() {
-             const indicator = document.getElementById('personalityIndicator');
-             if (gameState.personalityType && gameState.suspect) {
-                 indicator.innerHTML = `
-                     <strong>PERSONALITY PROFILE:</strong> ${gameState.personalityType.name}<br>
-                     <strong>TRAITS:</strong> ${gameState.personalityType.traits.join(', ')}<br>
-                     <strong>BEHAVIORAL TRIGGERS:</strong> ${gameState.personalityType.slipUpTriggers.join(', ')}<br>
-                     <strong>BACKGROUND ISSUES:</strong> Subject has undisclosed personal matters<br>
-                     <strong>PRESSURE POINTS:</strong> ${gameState.suspect.pressurePoints ? gameState.suspect.pressurePoints.slice(0, 5).join(', ') + '...' : 'Analyzing...'}
-                 `;
-             }
-         }
+                         function updatePersonalityIndicator() {
+            const indicator = document.getElementById('personalityIndicator');
+            if (gameState.personalityType && gameState.suspect) {
+                indicator.innerHTML = `
+                    <strong>PSYCHOLOGICAL PROFILE:</strong> ${gameState.personalityType.name}<br>
+                    <strong>OBSERVED TRAITS:</strong> ${gameState.personalityType.traits.join(', ')}
+                `;
+            }
+        }
 
         function displayCaseSummary() {
             const summary = gameState.crime.substring(0, 800) + '...';
@@ -1347,14 +1331,9 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
             cf.style.display = isShowing ? 'none' : 'block';
             
             if (!isShowing && gameState.crime) {
-                // Show the detective the full case file
                 document.getElementById('caseFileContent').innerHTML = `
                     <div style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.4;">
-                        <h3 style="color: #000080; margin-top: 0;">OFFICIAL CASE FILE - FOR DETECTIVE USE ONLY</h3>
-                        <div style="background: #f0f0f0; padding: 10px; border: 1px solid #ccc; margin: 10px 0;">
-                            <strong>⚠️ CONFIDENTIAL INFORMATION ⚠️</strong><br>
-                            This information is NOT known to the suspect unless they are guilty.
-                        </div>
+                        <h3 style="color: #000080; margin-top: 0;">OFFICIAL CASE FILE</h3>
                         <pre style="white-space: pre-wrap; margin: 0;">${gameState.crime}</pre>
                     </div>
                 `;
@@ -1390,14 +1369,7 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
             if (gameState.suspect && gameState.suspect.profile) {
                 content.innerHTML = `
                     <div style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.4;">
-                        <h3 style="color: #000080; margin-top: 0;">SUSPECT BACKGROUND - DETECTIVE BRIEFING</h3>
-                        <div style="background: #fff3cd; padding: 10px; border: 1px solid #ffeaa7; margin: 10px 0;">
-                            <strong>📋 INVESTIGATION NOTES:</strong><br>
-                            • Subject Status: ${gameState.suspect.isGuilty ? 'GUILTY (Unknown to suspect that we know)' : 'INNOCENT'}<br>
-                            • Dark Secret: ${gameState.suspect.darkSecret}<br>
-                            • Criminal History: ${gameState.suspect.criminalHistory}<br>
-                            • Pressure Points: ${gameState.suspect.pressurePoints?.join(', ') || 'None identified'}
-                        </div>
+                        <h3 style="color: #000080; margin-top: 0;">SUSPECT BACKGROUND</h3>
                         <pre style="white-space: pre-wrap; margin: 0;">${gameState.suspect.profile}</pre>
                     </div>
                 `;
@@ -1423,11 +1395,7 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
                 
                 content.innerHTML = `
                     <div style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.4;">
-                        <h3 style="color: #000080; margin-top: 0;">EVIDENCE LOCKER - CHAIN OF CUSTODY</h3>
-                        <div style="background: #d1ecf1; padding: 10px; border: 1px solid #bee5eb; margin: 10px 0;">
-                            <strong>🔍 EVIDENCE SUMMARY:</strong><br>
-                            Use this evidence to pressure the suspect and identify inconsistencies.
-                        </div>
+                        <h3 style="color: #000080; margin-top: 0;">EVIDENCE LOCKER</h3>
                         ${evidenceContent || '<p>No evidence data available in current format.</p>'}
                     </div>
                 `;
