@@ -787,28 +787,43 @@
 
             const caseNumber = `2024-${String(Math.floor(Math.random() * 999999)).padStart(6, '0')}`;
             
-            const crimePrompt = `Generate a detailed police case file for a ${template.type} that occurred at ${location} during ${timeFrame}.
+            const crimePrompt = `Generate a COMPLETE detailed police case file for a ${template.type} that occurred at ${location} during ${timeFrame}.
+
+            REQUIREMENTS:
+            - Use realistic street addresses (e.g., "1247 Oak Street, Apartment 3B")
+            - Use realistic victim names (e.g., "Robert Martinez", "Sarah Thompson")
+            - Include complete sections - do not cut off mid-sentence
+            - Make it a full, comprehensive case file
 
             Case Details:
             - Case Number: ${caseNumber}
             - Crime Type: ${template.type}
-            - Location: ${location}
+            - Location: ${location} (provide specific address)
             - Motive: ${motive}
             - Time Frame: ${timeFrame}
             - Evidence Available: ${evidenceItems.join(', ')}
-            - Primary Suspect: Use a realistic name (will be replaced with actual suspect name)
+            - Victim: Use a realistic name
+            - Primary Suspect: John Placeholder (will be replaced)
 
-            Create a comprehensive case file with:
-            1. CASE SUMMARY (150-200 words with specific times, dates, and details)
-            2. INCIDENT TIMELINE (hour-by-hour breakdown)
+            Create a COMPLETE case file with ALL sections:
+            1. CASE SUMMARY (200+ words with specific times, dates, addresses, and victim name)
+            2. INCIDENT TIMELINE (detailed hour-by-hour breakdown)
             3. PHYSICAL EVIDENCE (detailed descriptions of each evidence item)
-            4. WITNESS STATEMENTS (2-3 detailed witness accounts with names and contact info)
-            5. SUSPECT INFORMATION (preliminary details about primary suspect - use placeholder name)
+            4. WITNESS STATEMENTS (2-3 detailed witness accounts with full names and contact info)
+            5. SUSPECT INFORMATION (preliminary details about John Placeholder)
             6. INVESTIGATIVE NOTES (detective observations and theories)
 
-            Make it realistic with specific details, addresses, times, and procedural information. Format professionally as an official police document.`;
+            CRITICAL: Generate the ENTIRE case file. Do not stop mid-sentence. Include all sections completely.`;
 
-            return await queryChatGPT(crimePrompt, 'case_generation');
+            let crimeResult = await queryChatGPT(crimePrompt, 'case_generation');
+            
+            // Check if the generation was cut off and retry if needed
+            if (crimeResult.length < 500 || !crimeResult.includes('INVESTIGATIVE NOTES')) {
+                console.log('Crime generation appears incomplete, retrying...');
+                crimeResult = await queryChatGPT(crimePrompt + '\n\nIMPORTANT: Ensure you complete ALL 6 sections fully.', 'case_generation');
+            }
+            
+            return crimeResult;
         }
 
                  // Enhanced suspect generation with personality integration and pressure points
@@ -1310,9 +1325,10 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
         function replacePlaceholderNames(crimeText, actualSuspectName) {
             // Common placeholder names that might be generated
             const placeholderNames = [
-                'John Smith', 'Jane Doe', 'Michael Johnson', 'Sarah Williams', 'David Brown',
+                'John Placeholder', 'John Smith', 'Jane Doe', 'Michael Johnson', 'Sarah Williams', 'David Brown',
                 'Jennifer Davis', 'Robert Miller', 'Lisa Anderson', 'James Wilson', 'Mary Taylor',
-                'Christopher Moore', 'Patricia Jackson', 'Matthew Martin', 'Linda White', 'Anthony Harris'
+                'Christopher Moore', 'Patricia Jackson', 'Matthew Martin', 'Linda White', 'Anthony Harris',
+                'John Doe', 'Jane Smith', 'Primary Suspect', 'The Suspect'
             ];
             
             let updatedCrime = crimeText;
@@ -1323,9 +1339,15 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
                 updatedCrime = updatedCrime.replace(regex, actualSuspectName);
             });
             
-            // Also look for "suspect" or "the suspect" followed by generic descriptions and replace with name
+            // Also look for bracketed placeholders
+            updatedCrime = updatedCrime.replace(/\[Primary Suspect.*?\]/gi, actualSuspectName);
+            updatedCrime = updatedCrime.replace(/\[Suspect.*?\]/gi, actualSuspectName);
+            updatedCrime = updatedCrime.replace(/\[.*?Suspect.*?\]/gi, actualSuspectName);
+            
+            // Replace suspect references
             updatedCrime = updatedCrime.replace(/\bthe suspect\b/gi, actualSuspectName);
             updatedCrime = updatedCrime.replace(/\bsuspect:\s*[A-Za-z\s]+/gi, `Suspect: ${actualSuspectName}`);
+            updatedCrime = updatedCrime.replace(/\bPrimary Suspect:\s*[A-Za-z\s]+/gi, `Primary Suspect: ${actualSuspectName}`);
             
             return updatedCrime;
         }

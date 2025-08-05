@@ -112,7 +112,7 @@ RESPONSE REQUIREMENTS:
             model: "gpt-3.5-turbo",
             messages: messages,
             temperature: 0.8,
-            max_tokens: 200,
+            max_tokens: requestType === 'case_generation' || requestType === 'suspect_profile' ? 800 : 200,
             presence_penalty: 0.4,
             frequency_penalty: 0.6
         });
