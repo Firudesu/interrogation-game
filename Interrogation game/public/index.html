@@ -796,7 +796,7 @@
         }
 
         // Enhanced crime generation with templates
-        async function generateEnhancedCrime() {
+        async function generateEnhancedCrime(suspectName) {
             const template = CRIME_TEMPLATES[Math.floor(Math.random() * CRIME_TEMPLATES.length)];
             const location = template.locations[Math.floor(Math.random() * template.locations.length)];
             const motive = template.motives[Math.floor(Math.random() * template.motives.length)];
@@ -841,8 +841,13 @@
             CRITICAL: Generate the ENTIRE case file. Do not stop mid-sentence. Include all sections completely.`;
 
             // Generate static crime details (no AI needed for documents)
-            const victimNames = ["Robert Martinez", "Sarah Thompson", "Michael Johnson", "Emily Davis", "David Wilson"];
-            const victimName = victimNames[Math.floor(Math.random() * victimNames.length)];
+            const victimNames = ["Robert Martinez", "Sarah Thompson", "Michael Johnson", "Emily Davis", "David Wilson", "Jennifer Brown", "Christopher Lee", "Amanda White", "Daniel Garcia", "Lisa Rodriguez"];
+            
+            // Ensure victim name is different from suspect name
+            let victimName;
+            do {
+                victimName = victimNames[Math.floor(Math.random() * victimNames.length)];
+            } while (victimName.split(' ')[0] === suspectName.split(' ')[0]); // Compare first names
             const streetAddress = `${Math.floor(Math.random() * 9999) + 1} ${location}`;
             
             const crimeResult = `POLICE CASE FILE
@@ -1479,8 +1484,8 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
                     clearInterval(window.timerInterval);
                 }
                 
-                // Show the verdict screen (same as when time runs out)
-                document.getElementById('gameOverScreen').style.display = 'block';
+                // Call the same function as when time runs out
+                endInterrogation();
             }
         }
 
@@ -1493,7 +1498,7 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
                 const suspectName = SUSPECT_NAMES[Math.floor(Math.random() * SUSPECT_NAMES.length)];
                 
                 addSystemMessage('📋 Generating case file...');
-                let crime = await generateEnhancedCrime();
+                let crime = await generateEnhancedCrime(suspectName);
                 
                 addSystemMessage('👤 Creating suspect profile...');
                 gameState.suspect = await generateEnhancedSuspect(suspectName);
