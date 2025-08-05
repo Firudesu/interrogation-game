@@ -87,7 +87,7 @@ Respond naturally and stay in character. Keep responses under 150 words and incl
         }
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-4",
+            model: "gpt-3.5-turbo",
             messages: messages,
             temperature: 0.8,
             max_tokens: 200,
