@@ -5,17 +5,45 @@ exports.handler = async (event) => {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const { prompt, context, isGuilty, suspectProfile, crimeDetails, chatHistory, stressLevel, interrogationPhase } = JSON.parse(event.body);
+    const { prompt, context, isGuilty, suspectProfile, crimeDetails, chatHistory, stressLevel, interrogationPhase, requestType } = JSON.parse(event.body);
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    try {
-        // Build conversation context for better AI responses
-        const messages = [
-            {
-                role: "system",
-                content: `You are an AI playing a suspect in a police interrogation simulation. 
+        try {
+        let messages = [];
+        
+        // Handle different request types
+        if (requestType === 'case_generation') {
+            // For case generation - simple, direct generation without suspect role-play
+            messages = [
+                {
+                    role: "system",
+                    content: "You are a police case file generator. Generate realistic, detailed police case files with proper formatting and procedural information."
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ];
+        } else if (requestType === 'suspect_profile') {
+            // For suspect profile generation
+            messages = [
+                {
+                    role: "system",
+                    content: "You are a police psychological profiler. Generate detailed suspect profiles with background information, personality traits, and behavioral analysis."
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ];
+        } else {
+            // For suspect interrogation responses
+            messages = [
+                {
+                    role: "system",
+                    content: `You are an AI playing a suspect in a police interrogation simulation. 
 
-             ${isGuilty ? 
+${isGuilty ? 
 `You are GUILTY of the crime. You committed it and know all the details. You will try to hide your guilt through:
 - Subtle lies and misdirection
 - Emotional manipulation  
@@ -26,6 +54,8 @@ exports.handler = async (event) => {
 
 You know these crime details because you committed the crime: ${crimeDetails}
 Your background: ${suspectProfile}
+
+IMPORTANT: Only mention your background/past if directly asked about it. Don't volunteer information about your dark secrets or criminal history unless specifically questioned about those topics.
 
 Interrogation Phase ${interrogationPhase}: Show appropriate stress responses.
 You are trying to avoid confession and get away with the crime.
@@ -39,19 +69,22 @@ You are trying to avoid confession and get away with the crime.
 
 Your background: ${suspectProfile}
 
+IMPORTANT: Only mention your background/past if directly asked about it. Don't volunteer information about your dark secrets or personal issues unless specifically questioned about those topics.
+
 You only know what any innocent person would know - nothing about the crime details.
 `}
 
 Previous conversation context:
 ${chatHistory ? chatHistory.map(chat => `Q: ${chat.question}\nA: ${chat.response}`).join('\n') : 'No previous conversation'}
 
-Respond naturally and stay in character. Keep responses under 150 words and include realistic speech patterns, pauses (...), and emotional reactions.`
-            },
-            {
-                role: "user",
-                content: prompt
-            }
-        ];
+Respond naturally and stay in character. Keep responses under 150 words and include realistic speech patterns, pauses (...), and emotional reactions. Only reveal personal information if directly asked.`
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ];
+        }
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4",

@@ -698,11 +698,12 @@
             suspectKnowledge: null
         };
 
-        // Enhanced AI query function with better context
-        async function queryChatGPT(prompt, context = {}) {
+        // Enhanced AI query function with different request types
+        async function queryChatGPT(prompt, requestType = 'interrogation', context = {}) {
             try {
                 const requestData = {
                     prompt: prompt,
+                    requestType: requestType,
                     context: context,
                     isGuilty: gameState.suspect?.isGuilty || false,
                     suspectProfile: gameState.suspect?.profile || "",
@@ -784,7 +785,7 @@
 
             Make it realistic with specific details, addresses, times, and procedural information. Format professionally as an official police document.`;
 
-            return await queryChatGPT(crimePrompt);
+            return await queryChatGPT(crimePrompt, 'case_generation');
         }
 
                  // Enhanced suspect generation with personality integration and pressure points
@@ -852,7 +853,7 @@
 
              Make this person feel real with specific details, quirks, and believable background information. The dark secret should be woven naturally into their background. Format as an official police psychological assessment.`;
 
-             const profile = await queryChatGPT(profilePrompt);
+             const profile = await queryChatGPT(profilePrompt, 'suspect_profile');
              
              // Create pressure point keywords that will trigger stress
              const pressureKeywords = [
@@ -990,7 +991,7 @@
              
              Respond in character with realistic speech patterns, showing the complex emotions of someone with secrets being interrogated. Keep under 120 words.`;
 
-             return await queryChatGPT(responsePrompt);
+                           return await queryChatGPT(responsePrompt, 'interrogation');
          }
 
         // Enhanced slip-up detection system
@@ -1044,7 +1045,7 @@
                 setTimeout(() => {
                     const confessionPrompt = `Generate a confession or major slip-up for ${gameState.suspect.name}. They've reached their breaking point under interrogation. Make it emotional and believable, revealing key details about the crime. Keep it under 150 words.`;
                     
-                                         queryChatGPT(confessionPrompt).then(confession => {
+                                         queryChatGPT(confessionPrompt, 'interrogation').then(confession => {
                          addChatMessage('suspect', confession);
                          gameState.stress = Math.min(100, gameState.stress + 40);
                          updateStressDisplay();
