@@ -37,6 +37,7 @@
             animation: scrollLines 1s linear infinite;
         }
 
+        /* Enhanced CRT effect */
         body::after {
             content: "";
             position: fixed;
@@ -44,12 +45,21 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(
-                ellipse at center,
-                rgba(0, 255, 0, 0.1) 0%,
-                rgba(0, 255, 0, 0) 60%
-            );
+            background: 
+                radial-gradient(
+                    ellipse at center,
+                    rgba(0, 255, 0, 0.1) 0%,
+                    rgba(0, 255, 0, 0) 60%
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent 0px,
+                    transparent 1px,
+                    rgba(0, 255, 0, 0.03) 1px,
+                    rgba(0, 255, 0, 0.03) 2px
+                );
             pointer-events: none;
+            z-index: 998;
         }
 
         .glare-overlay {
@@ -99,6 +109,18 @@
             border-color: #ffffff #808080 #808080 #ffffff;
             box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.25);
             margin-bottom: 20px;
+            position: relative;
+        }
+
+        .window::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(to right, #ffffff, #c0c0c0);
+            z-index: 1;
         }
 
         .right-panel .window {
@@ -274,6 +296,38 @@
             min-height: 60px;
         }
 
+        /* Enhanced visual feedback */
+        .stress-high {
+            color: #ff0000;
+            font-weight: bold;
+        }
+
+        .stress-medium {
+            color: #ff8000;
+        }
+
+        .stress-low {
+            color: #008000;
+        }
+
+        /* Personality indicators */
+        .personality-nervous { border-left: 3px solid #ff0000; }
+        .personality-confident { border-left: 3px solid #0000ff; }
+        .personality-aggressive { border-left: 3px solid #800000; }
+        .personality-submissive { border-left: 3px solid #808080; }
+        .personality-calculating { border-left: 3px solid #800080; }
+        .personality-emotional { border-left: 3px solid #ff00ff; }
+        .personality-intellectual { border-left: 3px solid #008080; }
+        .personality-streetwise { border-left: 3px solid #804000; }
+
+        /* Slip-up highlighting */
+        .slip-up {
+            background-color: rgba(255, 0, 0, 0.1);
+            border-left: 3px solid #ff0000;
+            padding-left: 10px;
+            margin: 5px 0;
+        }
+
         @keyframes flicker {
             0% { opacity: 0.9; }
             50% { opacity: 1; }
@@ -341,6 +395,7 @@
         <button onclick="toggleCaseFile()">Case File</button>
         <button onclick="toggleSuspectFile()">Suspect File</button>
         <button onclick="toggleEvidenceFile()">Evidence File</button>
+        <button onclick="toggleHelp()">Help</button>
         <div class="lives-container">
             <div class="life-badge" id="life1"></div>
             <div class="life-badge" id="life2"></div>
@@ -370,6 +425,43 @@
             <button onclick="toggleEvidenceFile()" style="margin-left:auto">X</button>
         </div>
         <div class="window-content" id="evidenceFileContent"></div>
+    </div>
+
+    <div class="window" id="helpFile">
+        <div class="title-bar draggable">
+            Interrogation Guide
+            <button onclick="toggleHelp()" style="margin-left:auto">X</button>
+        </div>
+        <div class="window-content" id="helpFileContent">
+            <h3>INTERROGATION TECHNIQUES</h3>
+            <p><b>Effective Questions:</b></p>
+            <ul>
+                <li>"Where were you on [specific date/time]?"</li>
+                <li>"What do you know about [evidence item]?"</li>
+                <li>"Can you explain [contradiction]?"</li>
+                <li>"Who else was with you?"</li>
+                <li>"What's your relationship to [victim/location]?"</li>
+            </ul>
+            <p><b>Watch for:</b></p>
+            <ul>
+                <li>Verbal tics (uh, um, well...)</li>
+                <li>Contradictions in alibis</li>
+                <li>Knowledge they shouldn't have</li>
+                <li>Defensive reactions</li>
+                <li>Stress indicators</li>
+            </ul>
+            <p><b>Personality Types:</b></p>
+            <ul>
+                <li><b>Nervous:</b> Easily stressed, defensive</li>
+                <li><b>Confident:</b> Calm but arrogant</li>
+                <li><b>Aggressive:</b> Hostile, confrontational</li>
+                <li><b>Submissive:</b> Easily intimidated</li>
+                <li><b>Calculating:</b> Strategic, careful</li>
+                <li><b>Emotional:</b> Volatile, dramatic</li>
+                <li><b>Intellectual:</b> Analytical, precise</li>
+                <li><b>Streetwise:</b> Casual, suspicious</li>
+            </ul>
+        </div>
     </div>
 
     <div class="window intro-popup" id="introPopup">
@@ -424,21 +516,32 @@
         let gameState = {
             lives: 3,
             crime: null,
+            crimeDetails: null,
             suspect: null,
             contradictions: 0,
             stress: 0,
             timer: 360,
             chatHistory: [],
             interrogationPhase: 1,
-            coreTruth: null
+            coreTruth: null,
+            personalityType: null,
+            slipUps: [],
+            evidenceRevealed: [],
+            alibiContradictions: []
         };
 
-        async function queryChatGPT(prompt) {
+        async function queryChatGPT(prompt, conversationHistory = null, suspectData = null, crimeDetails = null, personalityType = null) {
             try {
                 const response = await fetch('/.netlify/functions/chat', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({prompt: prompt})
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        conversationHistory: conversationHistory,
+                        suspectData: suspectData,
+                        crimeDetails: crimeDetails,
+                        personalityType: personalityType
+                    })
                 });
                 const data = await response.json();
                 return data.content;
@@ -507,6 +610,16 @@
             }
         }
 
+        function toggleHelp() {
+            const hf = document.getElementById('helpFile');
+            hf.style.display = hf.style.display === 'none' ? 'block' : 'none';
+            if(hf.style.display === 'block') {
+                hf.style.left = '20%';
+                hf.style.top = '20%';
+                makeDraggable(hf);
+            }
+        }
+
         function updateSuspectFile() {
             const content = document.getElementById('suspectFileContent');
             const profile = gameState.suspect.profile;
@@ -519,11 +632,16 @@
             };
 
             content.innerHTML = `
+                <h3>SUSPECT PROFILE</h3>
                 <ul class="suspect-info">
                     ${Object.entries(details).map(([key, value]) => 
                         `<li><b>${key.toUpperCase()}:</b> ${value || 'Unknown'}</li>`
                     ).join('')}
+                    <li><b>PERSONALITY TYPE:</b> ${gameState.suspect.personalityType.toUpperCase()}</li>
+                    <li><b>STRESS TRIGGERS:</b> ${gameState.suspect.stressTriggers.join(', ')}</li>
+                    <li><b>DECEPTION PATTERNS:</b> ${gameState.suspect.deceptionPatterns.join(', ')}</li>
                 </ul>
+                <h4>BACKGROUND:</h4>
                 <div>${profile}</div>
             `;
         }
@@ -548,18 +666,37 @@
         async function initializeGame() {
             try {
                 const suspectName = SUSPECT_NAMES[Math.floor(Math.random()*50)];
+                gameState.personalityType = getRandomPersonality();
                 
-                const crimePrompt = `Generate police case file with:
-                - Case number (format: YYYY-######)
-                - Crime type (burglary/homicide/kidnapping)
-                - 150-word incident summary with exact times/locations
-                - 3-5 physical/digital evidence items
-                - 2 witness statements with names/ages
-                - Primary suspect: ${suspectName}
-                - Clear motive opportunity
-                Format sections with headers: Case File, Incident Summary, Evidence, Witness Statements, Suspect Profile`;
+                // Generate detailed crime with specific details
+                const crimePrompt = `Generate a detailed police case file with these EXACT specifications:
+                
+                CRIME TYPE: ${getRandomCrimeType()}
+                SUSPECT: ${suspectName}
+                
+                Include these specific details:
+                - Case number: YYYY-###### format
+                - Exact date and time of crime (specific hour and minute)
+                - Precise location with address
+                - Detailed crime scene description
+                - Specific evidence items with exact details (blood type, fingerprints, etc.)
+                - Witness statements with specific details they saw
+                - Suspect's exact motive and opportunity
+                - Timeline of events with specific times
+                - Physical evidence locations
+                - Any surveillance footage details
+                - Weather conditions during crime
+                - Suspect's clothing description
+                - Weapon or tool used (if applicable)
+                - Escape route taken
+                - Items stolen or damaged (if applicable)
+                
+                Format with clear sections: Case File, Incident Summary, Evidence, Witness Statements, Suspect Profile, Timeline
+                
+                Make it realistic and detailed enough that someone who committed the crime would know these specifics.`;
                 
                 gameState.crime = await queryChatGPT(crimePrompt);
+                gameState.crimeDetails = extractCrimeDetails(gameState.crime);
                 gameState.suspect = await generateSuspectProfile(suspectName);
                 
                 makeDraggable(document.getElementById('caseFile'));
@@ -575,30 +712,62 @@
             }
         }
 
+        function getRandomPersonality() {
+            const personalities = ['nervous', 'confident', 'aggressive', 'submissive', 'calculating', 'emotional', 'intellectual', 'streetwise'];
+            return personalities[Math.floor(Math.random() * personalities.length)];
+        }
+
+        function getRandomCrimeType() {
+            const crimes = ['Burglary', 'Armed Robbery', 'Homicide', 'Kidnapping', 'Arson', 'Fraud', 'Assault', 'Theft'];
+            return crimes[Math.floor(Math.random() * crimes.length)];
+        }
+
+        function extractCrimeDetails(crimeText) {
+            // Extract specific details that a guilty person would know
+            const details = {
+                time: extractDetail(crimeText, /(\d{1,2}:\d{2}\s*[AP]M)/i),
+                date: extractDetail(crimeText, /(\w+\s+\d{1,2},?\s+\d{4})/i),
+                location: extractDetail(crimeText, /(?:at|location|address)[:\s]+([^.\n]+)/i),
+                weapon: extractDetail(crimeText, /(?:weapon|used|with)[:\s]+([^.\n]+)/i),
+                stolen: extractDetail(crimeText, /(?:stolen|taken|missing)[:\s]+([^.\n]+)/i),
+                evidence: extractDetail(crimeText, /(?:evidence|found)[:\s]+([^.\n]+)/i),
+                motive: extractDetail(crimeText, /(?:motive|reason)[:\s]+([^.\n]+)/i),
+                escape: extractDetail(crimeText, /(?:escape|fled|left)[:\s]+([^.\n]+)/i)
+            };
+            return details;
+        }
+
         async function generateSuspectProfile(name) {
             try {
                 const isGuilty = Math.random() > 0.5;
-                const prompt = `Create detailed suspect profile for ${name} with:
-                - Full name
-                - Sex (Male/Female/Other)
-                - Height (format: X'XX")
-                - Physical description (age, hair, distinguishing features)
+                const personality = gameState.personalityType;
+                
+                const prompt = `Create a detailed suspect profile for ${name} with personality type: ${personality}
+                
+                Include:
+                - Full name and basic demographics
+                - Physical description (age, height, distinguishing features)
+                - Background and occupation
+                - Personality traits that match the ${personality} type
                 - Psychological profile
-                - Known associates
+                - Known associates and relationships
                 - Criminal record (if any)
-                Format sections clearly without markdown`;
-
+                - Behavioral patterns
+                - Stress indicators
+                - Communication style
+                
+                Make the profile realistic and detailed. Format clearly without markdown.`;
+                
                 const profile = await queryChatGPT(prompt);
-                const deceptionMatch = profile.match(/deception tactics:\s*(.+?)(\n|$)/i);
                 
                 return {
                     name,
                     isGuilty,
                     profile,
-                    stressTriggers: [],
-                    deceptionPatterns: deceptionMatch ? 
-                        deceptionMatch[1].split(/,\s*/) : 
-                        ['evasion', 'denial', 'deflection']
+                    personalityType: personality,
+                    stressTriggers: getStressTriggers(personality),
+                    deceptionPatterns: getDeceptionPatterns(personality, isGuilty),
+                    background: extractBackground(profile)
                 };
             } catch (error) {
                 console.error('Profile generation error:', error);
@@ -606,10 +775,53 @@
                     name,
                     isGuilty: true,
                     profile: 'Error generating profile',
-                    stressTriggers: [],
-                    deceptionPatterns: ['evasion', 'denial', 'deflection']
+                    personalityType: gameState.personalityType,
+                    stressTriggers: ['confrontation', 'evidence'],
+                    deceptionPatterns: ['evasion', 'denial', 'deflection'],
+                    background: 'Unknown'
                 };
             }
+        }
+
+        function getStressTriggers(personality) {
+            const triggers = {
+                'nervous': ['confrontation', 'evidence', 'accusations', 'pressure'],
+                'confident': ['contradictions', 'proof', 'witnesses'],
+                'aggressive': ['insults', 'challenges', 'authority'],
+                'submissive': ['intimidation', 'authority', 'confrontation'],
+                'calculating': ['surprises', 'new evidence', 'witnesses'],
+                'emotional': ['accusations', 'insults', 'pressure'],
+                'intellectual': ['logical traps', 'contradictions'],
+                'streetwise': ['authority', 'formal language', 'pressure']
+            };
+            return triggers[personality] || ['confrontation', 'evidence'];
+        }
+
+        function getDeceptionPatterns(personality, isGuilty) {
+            if (!isGuilty) return ['cooperation', 'honesty', 'consistency'];
+            
+            const patterns = {
+                'nervous': ['evasion', 'denial', 'deflection', 'stuttering'],
+                'confident': ['deflection', 'counter-accusations', 'arrogance'],
+                'aggressive': ['hostility', 'deflection', 'counter-attacks'],
+                'submissive': ['apologetic denial', 'seeking approval', 'deflection'],
+                'calculating': ['strategic deflection', 'careful responses', 'misleading'],
+                'emotional': ['outbursts', 'deflection', 'emotional appeals'],
+                'intellectual': ['logical deflection', 'technical language', 'misleading'],
+                'streetwise': ['casual deflection', 'street language', 'deflection']
+            };
+            return patterns[personality] || ['evasion', 'denial', 'deflection'];
+        }
+
+        function extractBackground(profile) {
+            // Extract key background information
+            const background = {
+                occupation: extractDetail(profile, /(?:occupation|job|works as)[:\s]+([^.\n]+)/i),
+                age: extractDetail(profile, /(?:age|years old)[:\s]+(\d+)/i),
+                education: extractDetail(profile, /(?:education|school)[:\s]+([^.\n]+)/i),
+                criminalRecord: extractDetail(profile, /(?:criminal record|prior convictions)[:\s]+([^.\n]+)/i)
+            };
+            return background;
         }
 
         async function askQuestion() {
@@ -621,7 +833,7 @@
                 gameState.chatHistory.push({question, response});
                 
                 updateChat(question, response);
-                analyzeResponse(response);
+                analyzeResponse(response, question);
                 document.getElementById('questionInput').value = '';
                 updateLiveFeed();
             } catch (error) {
@@ -631,37 +843,79 @@
         }
 
         async function generateInterrogationResponse(question) {
-            const interrogationFramework = gameState.suspect.isGuilty ? `
-            You are ${gameState.suspect.name}, actually guilty. Follow these rules:
-            1. Use deception tactics: ${gameState.suspect.deceptionPatterns.join(', ')}
-            2. Apply Reid Phase ${gameState.interrogationPhase} behavior: ${getReidPhaseBehavior(gameState.interrogationPhase)}
-            3. Stress Level ${gameState.stress}% effects: ${getStressEffects()}
-            4. Evidence Reaction: ${getEvidenceReaction(question)}
-            5. Tone Adaptation: ${getToneResponse(question)}
-            
-            Include 2+ of:
-            - Strategic pauses (...)
-            - Verbal tics (uh, um)
-            - Deflection phrases
-            - Mirroring interrogator's words
-            - Emotional escalation markers` 
-            : 
-            `You are innocent. Respond with:
-            - Direct answers
-            - Consistent details
-            - Appropriate confusion
-            - Verifiable information`;
+            // Prepare conversation history for context
+            const recentHistory = gameState.chatHistory.slice(-5).map(qa => ({
+                question: qa.question,
+                response: qa.response
+            }));
 
-            const prompt = `${interrogationFramework}
+            // Determine if this question might trigger a slip-up
+            const slipUpChance = calculateSlipUpChance(question);
+            const isGuilty = gameState.suspect.isGuilty;
             
-            Crime Details: ${gameState.crime}
-            Suspect Profile: ${gameState.suspect.profile}
-            Previous Answers: ${gameState.chatHistory.slice(-3).map(qa => qa.response).join(' | ')}
+            // If guilty and high stress, increase slip-up probability
+            if (isGuilty && gameState.stress > 70 && Math.random() < slipUpChance) {
+                return generateSlipUpResponse(question);
+            }
+
+            const prompt = `You are ${gameState.suspect.name} in a police interrogation.
+            
+            Personality: ${gameState.suspect.personalityType}
+            Background: ${JSON.stringify(gameState.suspect.background)}
+            Stress Level: ${gameState.stress}%
+            Interrogation Phase: ${gameState.interrogationPhase}
+            
+            ${isGuilty ? 
+                `You are GUILTY and know the crime details intimately. Use deception but stay in character.
+                Crime Details (you know these): ${JSON.stringify(gameState.crimeDetails)}` :
+                `You are INNOCENT and have no knowledge of the crime. Be genuinely confused by accusations.`
+            }
+            
+            Previous conversation: ${recentHistory.map(h => `Q: ${h.question} A: ${h.response}`).join(' | ')}
             
             Respond to: "${question}"
-            Keep response under 2 sentences with psychological realism`;
+            Keep response under 2 sentences, natural speech patterns, show personality.`;
 
-            return await queryChatGPT(prompt);
+            return await queryChatGPT(
+                prompt, 
+                recentHistory, 
+                gameState.suspect, 
+                isGuilty ? gameState.crimeDetails : null,
+                gameState.suspect.personalityType
+            );
+        }
+
+        function calculateSlipUpChance(question) {
+            let chance = 0.05; // Base 5% chance
+            
+            // Increase chance based on stress
+            chance += gameState.stress * 0.001; // 0.1% per stress point
+            
+            // Increase chance for specific question types
+            if (question.match(/evidence|proof|found/i)) chance += 0.15;
+            if (question.match(/time|when|exactly/i)) chance += 0.10;
+            if (question.match(/location|where|address/i)) chance += 0.10;
+            if (question.match(/weapon|tool|used/i)) chance += 0.12;
+            if (question.match(/motive|why|reason/i)) chance += 0.08;
+            
+            // Increase chance if suspect is nervous personality
+            if (gameState.suspect.personalityType === 'nervous') chance += 0.10;
+            
+            return Math.min(chance, 0.4); // Cap at 40%
+        }
+
+        function generateSlipUpResponse(question) {
+            const slipUps = [
+                `(nervous) Well... I mean, I was there, but I didn't... I mean, I don't know what you're talking about.`,
+                `(hesitant) Look, I might have seen something, but I wasn't involved... I mean, I don't remember exactly.`,
+                `(defensive) Fine! I was there, but it wasn't my fault! I mean... I don't know what you're accusing me of.`,
+                `(panicked) Okay, okay! I know what happened, but I didn't do it! I was just... I don't know!`,
+                `(confused) Wait, how do you know about that? I mean... I wasn't supposed to be there, but...`
+            ];
+            
+            const slipUp = slipUps[Math.floor(Math.random() * slipUps.length)];
+            gameState.slipUps.push({question, response: slipUp, type: 'knowledge_revelation'});
+            return slipUp;
         }
 
         function getReidPhaseBehavior(phase) {
@@ -706,22 +960,100 @@
             return "Neutral deflection";
         }
 
-        function analyzeResponse(response) {
+        function analyzeResponse(response, question) {
             const guiltMarkers = {
-                evasion: /\b(I don't recall|maybe|possibly)\b/gi,
-                minimization: /\b(just|only|merely)\b/gi,
-                projection: /\b(someone else|they must have)\b/gi,
-                stress: /\.{3}|uh|um/gi
+                evasion: /\b(I don't recall|maybe|possibly|I think|I guess)\b/gi,
+                minimization: /\b(just|only|merely|barely|hardly)\b/gi,
+                projection: /\b(someone else|they must have|other people|somebody)\b/gi,
+                stress: /\.{3}|uh|um|well|like/gi,
+                contradiction: /\b(but|however|actually|I mean)\b/gi,
+                knowledge: /\b(I was there|I know|I saw|I remember)\b/gi
             };
+
+            let stressIncrease = 0;
+            let contradictionCount = 0;
 
             Object.entries(guiltMarkers).forEach(([type, regex]) => {
                 const matches = response.match(regex) || [];
-                gameState.contradictions += matches.length;
-                gameState.stress += matches.length * {evasion: 5, minimization: 3, projection: 8, stress: 2}[type];
+                contradictionCount += matches.length;
+                
+                const stressMultiplier = {
+                    evasion: 3, 
+                    minimization: 2, 
+                    projection: 8, 
+                    stress: 1,
+                    contradiction: 5,
+                    knowledge: 15 // High stress for revealing knowledge
+                }[type];
+                
+                stressIncrease += matches.length * stressMultiplier;
             });
 
-            if(gameState.stress >= 80 && Math.random() < 0.3) {
+            // Check for slip-ups (knowledge revelations)
+            if (gameState.suspect.isGuilty) {
+                const slipUpIndicators = [
+                    /\b(I was there|I know|I saw)\b/gi,
+                    /\b(that's not possible|how do you know)\b/gi,
+                    /\b(I didn't mean to|it wasn't my fault)\b/gi,
+                    /\b(the weapon|the location|the time)\b/gi
+                ];
+
+                slipUpIndicators.forEach((regex, index) => {
+                    const matches = response.match(regex) || [];
+                    if (matches.length > 0) {
+                        gameState.slipUps.push({
+                            question,
+                            response,
+                            type: 'knowledge_revelation',
+                            stressIncrease: 20
+                        });
+                        stressIncrease += 20;
+                    }
+                });
+            }
+
+            // Check for alibi contradictions
+            if (gameState.chatHistory.length > 1) {
+                const previousAlibis = gameState.chatHistory
+                    .slice(-3)
+                    .filter(qa => qa.question.match(/where|when|alibi|time/i))
+                    .map(qa => qa.response);
+                
+                if (previousAlibis.length > 0) {
+                    const currentAlibi = response.match(/\b(I was|I went|I had|I did)\b/gi);
+                    if (currentAlibi && previousAlibis.some(alibi => 
+                        alibi.match(/\b(I was|I went|I had|I did)\b/gi) &&
+                        !alibi.includes(response.substring(0, 20))
+                    )) {
+                        gameState.alibiContradictions.push({
+                            question,
+                            response,
+                            previousAlibis
+                        });
+                        stressIncrease += 25;
+                        contradictionCount += 2;
+                    }
+                }
+            }
+
+            // Personality-based stress triggers
+            const personality = gameState.suspect.personalityType;
+            const triggers = gameState.suspect.stressTriggers;
+            
+            triggers.forEach(trigger => {
+                if (question.toLowerCase().includes(trigger) || response.toLowerCase().includes(trigger)) {
+                    stressIncrease += 10;
+                }
+            });
+
+            gameState.contradictions += contradictionCount;
+            gameState.stress += stressIncrease;
+
+            // Confession chance based on stress and personality
+            if (gameState.stress >= 85 && Math.random() < 0.4) {
                 induceConfession();
+            } else if (gameState.stress >= 70 && Math.random() < 0.2) {
+                inducePartialConfession();
             }
 
             document.getElementById('stressLevel').textContent = Math.min(gameState.stress, 100);
@@ -729,9 +1061,31 @@
         }
 
         function induceConfession() {
-            const confession = `(Voice breaking) Okay... I did it. ${gameState.crime.match(/Motive:\s*(.+?)(\n|$)/)[1]}`;
+            const confessions = [
+                `(Voice breaking) Okay... I did it. I'm sorry, I didn't mean for it to happen like that.`,
+                `(Defeated) Fine. You got me. I did it. I was there, I did what you're accusing me of.`,
+                `(Emotional) I can't take this anymore! Yes, I did it! I was there, I know what happened!`,
+                `(Resigned) Alright, you win. I was there, I did it. I don't know what else to say.`,
+                `(Panicked) Stop! Stop asking questions! I did it, okay? I did it! I'm sorry!`
+            ];
+            
+            const confession = confessions[Math.floor(Math.random() * confessions.length)];
             gameState.chatHistory.push({question: "", response: confession});
             updateChat('', confession);
+        }
+
+        function inducePartialConfession() {
+            const partialConfessions = [
+                `(Hesitant) Look, I might have been there, but I didn't do anything wrong...`,
+                `(Nervous) I was there, but I didn't mean for anything to happen...`,
+                `(Defensive) Fine, I was there! But I didn't do what you're saying I did!`,
+                `(Confused) I might have seen something, but I don't remember exactly...`,
+                `(Stressed) I was there, okay? But it wasn't my fault! I didn't mean to...`
+            ];
+            
+            const partialConfession = partialConfessions[Math.floor(Math.random() * partialConfessions.length)];
+            gameState.chatHistory.push({question: "", response: partialConfession});
+            updateChat('', partialConfession);
         }
 
         function displayCaseSummary() {
@@ -744,7 +1098,10 @@
         function updateLiveFeed() {
             const cam = document.getElementById('suspectCam');
             const time = new Date().toLocaleTimeString();
-            cam.innerHTML = `[LIVE FEED: INTERROGATION ROOM 3]\n\n> SUSPECT: ${gameState.suspect.name}\n> STATUS: ${getStressStatus()}\n> TIMESTAMP: ${time}\n${'▯'.repeat(30)}`;
+            const personality = gameState.suspect?.personalityType || 'UNKNOWN';
+            const stressStatus = getStressStatus();
+            
+            cam.innerHTML = `[LIVE FEED: INTERROGATION ROOM 3]\n\n> SUSPECT: ${gameState.suspect?.name || 'UNKNOWN'}\n> PERSONALITY: ${personality.toUpperCase()}\n> STATUS: ${stressStatus}\n> STRESS: ${gameState.stress}%\n> TIMESTAMP: ${time}\n${'▯'.repeat(30)}`;
         }
 
         function getStressStatus() {
@@ -767,8 +1124,11 @@
 
         function updateChat(question, response) {
             const chatLog = document.getElementById('chatLog');
+            const isSlipUp = gameState.slipUps.some(slip => slip.response === response);
+            const responseClass = isSlipUp ? 'slip-up' : '';
+            
             chatLog.innerHTML += `<div><b>You:</b> ${question}</div>` +
-                               `<div><b>Suspect:</b> ${response}</div>`;
+                               `<div class="${responseClass}"><b>Suspect:</b> ${response}</div>`;
             chatLog.scrollTop = chatLog.scrollHeight;
         }
 
@@ -793,9 +1153,18 @@
             
             resultElement.style.color = correct ? "#000080" : "#800000";
             
-            resultElement.innerHTML += `<br><small>Suspect was actually ${gameState.suspect.isGuilty ? 'GUILTY' : 'INNOCENT'}<br>
-                Stress Thresholds Reached: ${Math.floor(gameState.stress/25) * 25}%<br>
-                Deception Patterns Detected: ${gameState.contradictions}</small>`;
+            // Detailed analysis
+            const analysis = generateVerdictAnalysis();
+            
+            resultElement.innerHTML += `<br><small>
+                Suspect was actually ${gameState.suspect.isGuilty ? 'GUILTY' : 'INNOCENT'}<br>
+                Personality Type: ${gameState.suspect.personalityType.toUpperCase()}<br>
+                Stress Level: ${gameState.stress}%<br>
+                Contradictions Detected: ${gameState.contradictions}<br>
+                Slip-ups: ${gameState.slipUps.length}<br>
+                Alibi Contradictions: ${gameState.alibiContradictions.length}<br>
+                ${analysis}
+            </small>`;
 
             if (!correct) {
                 gameState.lives--;
@@ -811,6 +1180,30 @@
             document.getElementById('nextCaseButton').style.display = 'block';
         }
 
+        function generateVerdictAnalysis() {
+            let analysis = '';
+            
+            if (gameState.suspect.isGuilty) {
+                if (gameState.slipUps.length > 0) {
+                    analysis += `Key slip-up: "${gameState.slipUps[0].response}"<br>`;
+                }
+                if (gameState.alibiContradictions.length > 0) {
+                    analysis += `Alibi contradiction detected<br>`;
+                }
+                if (gameState.stress > 80) {
+                    analysis += `High stress led to confession<br>`;
+                }
+            } else {
+                if (gameState.contradictions < 3) {
+                    analysis += `Consistent responses indicated innocence<br>`;
+                } else {
+                    analysis += `Some contradictions but likely innocent<br>`;
+                }
+            }
+            
+            return analysis;
+        }
+
         function handleNextCase() {
             restartGame();
             document.getElementById('nextCaseButton').style.display = 'none';
@@ -823,13 +1216,17 @@
             gameState = {
                 lives: gameState.lives,
                 crime: null,
+                crimeDetails: null,
                 suspect: null,
-                disclosedEvidence: [],
                 contradictions: 0,
                 stress: 0,
                 timer: 360,
                 chatHistory: [],
-                interrogationPhase: 1
+                interrogationPhase: 1,
+                personalityType: null,
+                slipUps: [],
+                evidenceRevealed: [],
+                alibiContradictions: []
             };
             document.getElementById('chatLog').innerHTML = '';
             initializeGame();
