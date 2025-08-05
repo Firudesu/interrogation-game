@@ -6,7 +6,8 @@ exports.handler = async (event) => {
     }
 
     try {
-        const { prompt, requestType, isGuilty, suspectProfile, crimeDetails, chatHistory, stressLevel, interrogationPhase } = JSON.parse(event.body);
+        const body = JSON.parse(event.body);
+        const { prompt, requestType } = body;
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
         let messages = [];
@@ -65,7 +66,9 @@ Write in professional police profiling format. Generate complete profiles with a
             maxTokens = 800;
             
         } else {
-            // SUSPECT INTERROGATION ROLEPLAY ONLY
+            // SUSPECT INTERROGATION ROLEPLAY ONLY - get suspect parameters
+            const { isGuilty, suspectProfile, crimeDetails, chatHistory, stressLevel, interrogationPhase } = body;
+            
             messages = [
                 {
                     role: "system",

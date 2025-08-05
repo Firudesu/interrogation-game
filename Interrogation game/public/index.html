@@ -723,17 +723,23 @@
         // Enhanced AI query function with different request types
         async function queryChatGPT(prompt, requestType = 'interrogation', context = {}) {
             try {
-                const requestData = {
+                let requestData = {
                     prompt: prompt,
-                    requestType: requestType,
-                    context: context,
-                    isGuilty: gameState.suspect?.isGuilty || false,
-                    suspectProfile: gameState.suspect?.profile || "",
-                    crimeDetails: gameState.suspect?.isGuilty ? gameState.suspectKnowledge : null,
-                    chatHistory: gameState.chatHistory.slice(-5), // Last 5 exchanges for context
-                    stressLevel: gameState.stress,
-                    interrogationPhase: gameState.interrogationPhase
+                    requestType: requestType
                 };
+
+                // Only add suspect-specific parameters for interrogation
+                if (requestType === 'interrogation') {
+                    requestData = {
+                        ...requestData,
+                        isGuilty: gameState.suspect?.isGuilty || false,
+                        suspectProfile: gameState.suspect?.profile || "",
+                        crimeDetails: gameState.suspect?.isGuilty ? gameState.suspectKnowledge : null,
+                        chatHistory: gameState.chatHistory.slice(-5), // Last 5 exchanges for context
+                        stressLevel: gameState.stress,
+                        interrogationPhase: gameState.interrogationPhase
+                    };
+                }
 
                 const response = await fetch('/.netlify/functions/chat', {
                     method: 'POST',
