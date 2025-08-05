@@ -115,13 +115,14 @@
         }
 
         #chatLog {
-            height: calc(48vh - 120px);
+            height: calc(40vh - 100px);
             background: #000;
             color: #00ff00;
             font-family: 'Courier New', monospace;
             border: 2px inset #c0c0c0;
             padding: 8px;
             overflow-y: auto;
+            margin-bottom: 10px;
         }
 
         .live-feed {
@@ -369,27 +370,34 @@
         .question-input-container {
             display: flex;
             gap: 8px;
-            margin-top: 8px;
+            margin-top: 10px;
             align-items: center;
+            background: #c0c0c0;
+            padding: 8px;
+            border: 2px inset #c0c0c0;
+            border-radius: 2px;
         }
 
         #questionInput {
             flex: 1;
             background: #ffffff;
             border: 2px inset #c0c0c0;
-            padding: 4px;
+            padding: 6px;
             font-family: 'MS Sans Serif', sans-serif;
-            font-size: 11px;
+            font-size: 12px;
+            min-height: 20px;
         }
 
         .ask-button {
             background: linear-gradient(145deg, #d4d0c8 0%, #c0c0c0 50%, #a8a8a8 100%);
             border: 2px solid;
             border-color: #ffffff #404040 #404040 #ffffff;
-            padding: 4px 16px;
-            font-size: 11px;
+            padding: 6px 20px;
+            font-size: 12px;
+            font-weight: bold;
             cursor: pointer;
             font-family: 'MS Sans Serif', sans-serif;
+            min-height: 32px;
         }
 
         .ask-button:active {
@@ -1294,9 +1302,19 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
                 makeDraggable(document.getElementById('suspectFile'));
                 makeDraggable(document.getElementById('evidenceFile'));
                 
-                                 addSystemMessage('✅ System ready - Begin interrogation');
-                 setupKeyboardSupport();
-                 document.getElementById('questionInput').focus();
+                                                 addSystemMessage('✅ System ready - Begin interrogation');
+                addSystemMessage('💬 Type your questions in the input box below and press Enter or click ASK');
+                setupKeyboardSupport();
+                
+                // Ensure input box is visible and focused
+                const questionInput = document.getElementById('questionInput');
+                if (questionInput) {
+                    questionInput.style.display = 'block';
+                    questionInput.disabled = false;
+                    questionInput.focus();
+                } else {
+                    addSystemMessage('❌ ERROR: Question input not found');
+                }
                  
              } catch (error) {
                  console.error('Initialization error:', error);
@@ -1322,19 +1340,33 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
             document.getElementById('crimeSummary').innerHTML = `<pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 10px;">${summary}</pre>`;
         }
 
-        // File toggle functions with enhanced content
+        // File toggle functions - Detective access to case information
         function toggleCaseFile() {
             const cf = document.getElementById('caseFile');
-            cf.style.display = cf.style.display === 'none' ? 'block' : 'none';
-            if (cf.style.display === 'block') {
-                document.getElementById('caseFileContent').innerHTML = `<pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 10px;">${gameState.crime}</pre>`;
+            const isShowing = cf.style.display === 'block';
+            cf.style.display = isShowing ? 'none' : 'block';
+            
+            if (!isShowing && gameState.crime) {
+                // Show the detective the full case file
+                document.getElementById('caseFileContent').innerHTML = `
+                    <div style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.4;">
+                        <h3 style="color: #000080; margin-top: 0;">OFFICIAL CASE FILE - FOR DETECTIVE USE ONLY</h3>
+                        <div style="background: #f0f0f0; padding: 10px; border: 1px solid #ccc; margin: 10px 0;">
+                            <strong>⚠️ CONFIDENTIAL INFORMATION ⚠️</strong><br>
+                            This information is NOT known to the suspect unless they are guilty.
+                        </div>
+                        <pre style="white-space: pre-wrap; margin: 0;">${gameState.crime}</pre>
+                    </div>
+                `;
             }
         }
 
         function toggleSuspectFile() {
             const sf = document.getElementById('suspectFile');
-            sf.style.display = sf.style.display === 'none' ? 'block' : 'none';
-            if (sf.style.display === 'block') {
+            const isShowing = sf.style.display === 'block';
+            sf.style.display = isShowing ? 'none' : 'block';
+            
+            if (!isShowing) {
                 sf.style.left = '40%';
                 sf.style.top = '30%';
                 updateSuspectFile();
@@ -1343,8 +1375,10 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
 
         function toggleEvidenceFile() {
             const ef = document.getElementById('evidenceFile');
-            ef.style.display = ef.style.display === 'none' ? 'block' : 'none';
-            if (ef.style.display === 'block') {
+            const isShowing = ef.style.display === 'block';
+            ef.style.display = isShowing ? 'none' : 'block';
+            
+            if (!isShowing) {
                 ef.style.left = '30%';
                 ef.style.top = '40%';
                 updateEvidenceFile();
@@ -1353,14 +1387,50 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
 
         function updateSuspectFile() {
             const content = document.getElementById('suspectFileContent');
-            content.innerHTML = `<pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 10px;">${gameState.suspect.profile}</pre>`;
+            if (gameState.suspect && gameState.suspect.profile) {
+                content.innerHTML = `
+                    <div style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.4;">
+                        <h3 style="color: #000080; margin-top: 0;">SUSPECT BACKGROUND - DETECTIVE BRIEFING</h3>
+                        <div style="background: #fff3cd; padding: 10px; border: 1px solid #ffeaa7; margin: 10px 0;">
+                            <strong>📋 INVESTIGATION NOTES:</strong><br>
+                            • Subject Status: ${gameState.suspect.isGuilty ? 'GUILTY (Unknown to suspect that we know)' : 'INNOCENT'}<br>
+                            • Dark Secret: ${gameState.suspect.darkSecret}<br>
+                            • Criminal History: ${gameState.suspect.criminalHistory}<br>
+                            • Pressure Points: ${gameState.suspect.pressurePoints?.join(', ') || 'None identified'}
+                        </div>
+                        <pre style="white-space: pre-wrap; margin: 0;">${gameState.suspect.profile}</pre>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = '<p>Suspect profile loading...</p>';
+            }
         }
 
         function updateEvidenceFile() {
             const content = document.getElementById('evidenceFileContent');
-            const evidenceSection = gameState.crime.match(/PHYSICAL EVIDENCE|Evidence:|EVIDENCE([\s\S]*?)(?=WITNESS|Witness|SUSPECT|$)/i);
-            if (evidenceSection) {
-                content.innerHTML = `<pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 10px;">${evidenceSection[0]}</pre>`;
+            if (gameState.crime) {
+                // Extract evidence section from crime file
+                const evidenceMatch = gameState.crime.match(/(?:PHYSICAL EVIDENCE|Evidence|EVIDENCE)([\s\S]*?)(?=WITNESS|Witness|SUSPECT|INVESTIGATIVE|$)/i);
+                const witnessMatch = gameState.crime.match(/(?:WITNESS STATEMENTS|Witness|WITNESSES)([\s\S]*?)(?=SUSPECT|INVESTIGATIVE|NOTES|$)/i);
+                
+                let evidenceContent = '';
+                if (evidenceMatch) {
+                    evidenceContent += `<h4>PHYSICAL EVIDENCE:</h4><pre>${evidenceMatch[1].trim()}</pre>`;
+                }
+                if (witnessMatch) {
+                    evidenceContent += `<h4>WITNESS STATEMENTS:</h4><pre>${witnessMatch[1].trim()}</pre>`;
+                }
+                
+                content.innerHTML = `
+                    <div style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.4;">
+                        <h3 style="color: #000080; margin-top: 0;">EVIDENCE LOCKER - CHAIN OF CUSTODY</h3>
+                        <div style="background: #d1ecf1; padding: 10px; border: 1px solid #bee5eb; margin: 10px 0;">
+                            <strong>🔍 EVIDENCE SUMMARY:</strong><br>
+                            Use this evidence to pressure the suspect and identify inconsistencies.
+                        </div>
+                        ${evidenceContent || '<p>No evidence data available in current format.</p>'}
+                    </div>
+                `;
             } else {
                 content.innerHTML = '<p>Evidence analysis in progress...</p>';
             }
