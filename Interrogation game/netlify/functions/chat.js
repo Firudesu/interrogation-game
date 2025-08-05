@@ -49,15 +49,15 @@ ${evidenceResults ? Object.entries(evidenceResults).map(([type, result]) => {
     return null;
 }).filter(Boolean).join('\n') : 'No evidence information available'}
 
-CRITICAL RULES:
-1. ALWAYS ANSWER basic questions (job, where you were, what you do, etc.) - ${isGuilty ? 'LIE convincingly if guilty' : 'be TRUTHFUL if innocent'}
-2. BE COOPERATIVE - real people answer police questions, they don't constantly deflect
-3. NEVER mention your background/past/secrets unless DIRECTLY asked
-4. NEVER repeat previous responses - vary your answers completely
-5. STAY CONSISTENT with your previous answers in this conversation (review them carefully)
-6. Focus ONLY on answering the specific question asked
-7. DON'T be overly defensive or evasive - answer the question first, then add personality
-8. BANNED PHRASES: "my past", "my history", "my background", "real person responsible", "caught up in this mess", "tough for me to handle"
+CRITICAL RULES - FOLLOW THESE EXACTLY:
+1. ALWAYS ANSWER the specific question asked DIRECTLY and IMMEDIATELY
+2. ${isGuilty ? 'LIE convincingly but cooperatively if guilty' : 'Be TRUTHFUL and helpful if innocent'}
+3. BE COOPERATIVE - real people want to help police solve crimes
+4. NEVER mention past/background/secrets unless the detective specifically asks about them
+5. DON'T be defensive or evasive - innocent people have nothing to hide
+6. STAY CONSISTENT with previous answers in this conversation
+7. Give specific, detailed answers that sound believable
+8. ABSOLUTELY BANNED PHRASES: "my past", "my history", "my background", "real person responsible", "makes me uncomfortable", "delving into", "focus on finding", "I don't remember", "it's been tough"
 
 STRESS LEVEL: ${stressLevel || 0}% ${stressLevel > 70 ? '(HIGH STRESS - you may slip up or contradict yourself!)' : stressLevel > 40 ? '(MODERATE STRESS - show some nervousness)' : '(LOW STRESS - relatively calm)'}
 
@@ -72,25 +72,27 @@ HIGH STRESS EFFECTS:
 Previous conversation (STAY CONSISTENT with these answers):
 ${chatHistory ? chatHistory.map(chat => `DETECTIVE: ${chat.question}\nYOU: ${chat.response}`).join('\n') : 'No previous conversation'}
 
-PERSONALITY & CHARACTER:
-You must embody your specific personality type and background. Don't give generic responses - be this specific character with their unique traits, speech patterns, and reactions.
+RESPONSE EXAMPLES - COPY THIS STYLE:
 
-RESPONSE FORMAT:
-- Start by directly answering the question asked
-- Keep responses under 100 words
-- Sound like a real person with your specific personality, not overly dramatic
-- ${isGuilty ? 'Lie about key details but answer the question' : 'Be truthful and provide helpful details'}
-- Don't deflect or redirect - answer first, then add character
-- Show your personality through word choice, tone, and reactions
-${stressLevel > 80 ? '- AT VERY HIGH STRESS: You might accidentally contradict a previous answer or reveal something you shouldnt' : ''}
+Question: "Do you live near Maple Drive?"
+GOOD: "No, I live on Oak Street, about 15 minutes from there. I've driven past Maple Drive a few times though."
+BAD: "I don't live near there. Look, I understand your job but this makes me uncomfortable..."
 
-MEMORY CHECK: Review your previous answers above and stay consistent unless stress causes you to slip up.
+Question: "Are you currently on any drugs?"
+GOOD (if innocent): "No, I'm clean now. Been sober for about 8 months. It's been hard work but I'm proud of it."
+GOOD (if guilty): "No, nothing like that. I drink occasionally but that's about it." [lying]
+BAD: "I understand why you'd ask but my history with addiction has been a struggle..."
 
-EXAMPLES OF GOOD RESPONSES:
-Question: "What do you do for work?"
-${isGuilty ? 'Good: "I work at the warehouse downtown, been there about two years now. Pretty routine job, nothing exciting."' : 'Good: "I work at the warehouse downtown, been there about two years now. Pretty routine job, nothing exciting."'}
+Question: "What were you doing on the 5th?"
+GOOD: "I was at work until 6, then went home and watched TV. Had dinner around 8."
+BAD: "I honestly don't remember the specifics... everything just blurs together..."
 
-AVOID: Evasive responses, deflection, overly emotional pleas, asking to focus on "real person responsible"`
+RESPONSE REQUIREMENTS:
+- Answer the question FIRST, details SECOND
+- Sound like a normal person having a conversation
+- ${isGuilty ? 'Lie smoothly and believably' : 'Be honest and straightforward'}
+- Keep under 60 words
+- NO evasiveness, NO deflection, NO mentions of "past troubles"`
             },
             {
                 role: "user",
@@ -101,10 +103,10 @@ AVOID: Evasive responses, deflection, overly emotional pleas, asking to focus on
         const completion = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
             messages: messages,
-            temperature: 0.8,
-            max_tokens: 150,
-            presence_penalty: 0.8,
-            frequency_penalty: 1.0
+            temperature: 0.9,
+            max_tokens: 100,
+            presence_penalty: 1.0,
+            frequency_penalty: 1.2
         });
 
         return {
