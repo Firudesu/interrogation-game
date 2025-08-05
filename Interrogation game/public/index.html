@@ -170,6 +170,15 @@
             padding: 10px;
         }
 
+        /* Ensure popup windows have proper scrolling */
+        #caseFile .window-content,
+        #suspectFile .window-content,
+        #evidenceFile .window-content {
+            padding: 0;
+            overflow-y: auto;
+            max-height: calc(75vh - 40px);
+        }
+
         #taskbar {
             position: fixed;
             bottom: 0;
@@ -785,13 +794,14 @@
             - Motive: ${motive}
             - Time Frame: ${timeFrame}
             - Evidence Available: ${evidenceItems.join(', ')}
+            - Primary Suspect: Use a realistic name (will be replaced with actual suspect name)
 
             Create a comprehensive case file with:
             1. CASE SUMMARY (150-200 words with specific times, dates, and details)
             2. INCIDENT TIMELINE (hour-by-hour breakdown)
             3. PHYSICAL EVIDENCE (detailed descriptions of each evidence item)
             4. WITNESS STATEMENTS (2-3 detailed witness accounts with names and contact info)
-            5. SUSPECT INFORMATION (preliminary details about primary suspect)
+            5. SUSPECT INFORMATION (preliminary details about primary suspect - use placeholder name)
             6. INVESTIGATIVE NOTES (detective observations and theories)
 
             Make it realistic with specific details, addresses, times, and procedural information. Format professionally as an official police document.`;
@@ -844,25 +854,36 @@
              const selectedSecret = darkSecrets[Math.floor(Math.random() * darkSecrets.length)];
              const selectedHistory = suspectHistory[Math.floor(Math.random() * suspectHistory.length)];
              
-             const profilePrompt = `Create a detailed psychological profile for suspect ${name} with the following personality type: ${personalityType.name}
+                         // Determine gender from name for consistency
+            const maleNames = ['Marcus', 'David', 'James', 'Michael', 'Robert', 'Christopher', 'Daniel', 'Anthony', 'Matthew', 'Kevin', 'Brian', 'Ryan', 'Jonathan', 'Tyler', 'Jacob', 'Alexander', 'Nathan', 'Zachary', 'Gregory', 'Jeremy', 'Sean'];
+            const femaleNames = ['Sarah', 'Maria', 'Lisa', 'Jennifer', 'Amanda', 'Michelle', 'Jessica', 'Ashley', 'Nicole', 'Melissa', 'Stephanie', 'Kimberly', 'Rebecca', 'Laura', 'Samantha', 'Christina', 'Rachel', 'Heather', 'Megan', 'Tiffany', 'Vanessa', 'Brittany', 'Danielle', 'Kristen', 'Amber'];
+            
+            const firstName = name.split(' ')[0];
+            const isGenderMale = maleNames.includes(firstName);
+            const gender = isGenderMale ? 'Male' : 'Female';
+            const pronouns = isGenderMale ? 'he/him' : 'she/her';
+            
+            const profilePrompt = `Create a detailed psychological profile for suspect ${name} with the following personality type: ${personalityType.name}
 
-             Personality Traits: ${personalityType.traits.join(', ')}
-             
-             IMPORTANT: This suspect has the following background elements that create stress when mentioned:
-             - Dark Secret/Pressure Point: ${selectedSecret}
-             - Criminal/Personal History: ${selectedHistory}
-             
-             Include:
-             1. BASIC INFORMATION (Name, Age, Sex, Height, Weight, Build)
-             2. PHYSICAL DESCRIPTION (Hair, Eyes, Distinguishing marks, Clothing style)
-             3. PSYCHOLOGICAL PROFILE (Personality traits, behavioral patterns, triggers)
-             4. BACKGROUND (Education, Employment, Family, Criminal history - include the provided history)
-             5. KNOWN ASSOCIATES (Friends, family, criminal contacts)
-             6. BEHAVIORAL ANALYSIS (How they handle stress, deception patterns, weaknesses)
-             7. PRESSURE POINTS (Things that make them uncomfortable - include the dark secret)
-             8. INTERROGATION NOTES (Recommended approach, potential pressure points)
+            CRITICAL: The suspect's name is EXACTLY "${name}" and gender is ${gender}. Use these exact details.
+            
+            Personality Traits: ${personalityType.traits.join(', ')}
+            
+            IMPORTANT: This suspect has the following background elements that create stress when mentioned:
+            - Dark Secret/Pressure Point: ${selectedSecret}
+            - Criminal/Personal History: ${selectedHistory}
+            
+            Include:
+            1. BASIC INFORMATION (Name: ${name}, Gender: ${gender}, Age, Height, Weight, Build)
+            2. PHYSICAL DESCRIPTION (Hair, Eyes, Distinguishing marks, Clothing style)
+            3. PSYCHOLOGICAL PROFILE (Personality traits, behavioral patterns, triggers)
+            4. BACKGROUND (Education, Employment, Family, Criminal history - include the provided history)
+            5. KNOWN ASSOCIATES (Friends, family, criminal contacts)
+            6. BEHAVIORAL ANALYSIS (How ${pronouns} handle stress, deception patterns, weaknesses)
+            7. PRESSURE POINTS (Things that make ${pronouns} uncomfortable - include the dark secret)
+            8. INTERROGATION NOTES (Recommended approach, potential pressure points)
 
-             Make this person feel real with specific details, quirks, and believable background information. The dark secret should be woven naturally into their background. Format as an official police psychological assessment.`;
+            Make this person feel real with specific details, quirks, and believable background information. The dark secret should be woven naturally into their background. Format as an official police psychological assessment. MUST use the exact name "${name}" and gender "${gender}" throughout.`;
 
              const profile = await queryChatGPT(profilePrompt, 'suspect_profile');
              
@@ -1270,19 +1291,48 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
             return '🔵 LOW - CALM';
         }
 
+        // Function to replace placeholder names with actual suspect name
+        function replacePlaceholderNames(crimeText, actualSuspectName) {
+            // Common placeholder names that might be generated
+            const placeholderNames = [
+                'John Smith', 'Jane Doe', 'Michael Johnson', 'Sarah Williams', 'David Brown',
+                'Jennifer Davis', 'Robert Miller', 'Lisa Anderson', 'James Wilson', 'Mary Taylor',
+                'Christopher Moore', 'Patricia Jackson', 'Matthew Martin', 'Linda White', 'Anthony Harris'
+            ];
+            
+            let updatedCrime = crimeText;
+            
+            // Replace any placeholder names with the actual suspect name
+            placeholderNames.forEach(placeholder => {
+                const regex = new RegExp(placeholder, 'gi');
+                updatedCrime = updatedCrime.replace(regex, actualSuspectName);
+            });
+            
+            // Also look for "suspect" or "the suspect" followed by generic descriptions and replace with name
+            updatedCrime = updatedCrime.replace(/\bthe suspect\b/gi, actualSuspectName);
+            updatedCrime = updatedCrime.replace(/\bsuspect:\s*[A-Za-z\s]+/gi, `Suspect: ${actualSuspectName}`);
+            
+            return updatedCrime;
+        }
+
         // Enhanced initialization
         async function initializeGame() {
             try {
                 addSystemMessage('🔄 Initializing enhanced interrogation system...');
                 
-                // Generate crime and suspect
+                // Generate crime and suspect with matching names
                 const suspectName = SUSPECT_NAMES[Math.floor(Math.random() * SUSPECT_NAMES.length)];
                 
                 addSystemMessage('📋 Generating case file...');
-                gameState.crime = await generateEnhancedCrime();
+                let crime = await generateEnhancedCrime();
                 
                 addSystemMessage('👤 Creating suspect profile...');
                 gameState.suspect = await generateEnhancedSuspect(suspectName);
+                
+                // Replace any placeholder suspect names in the crime with the actual suspect name
+                addSystemMessage('🔗 Linking case details...');
+                crime = replacePlaceholderNames(crime, suspectName);
+                gameState.crime = crime;
                 gameState.personalityType = gameState.suspect.personalityType;
                 
                 // If guilty, create knowledge base
