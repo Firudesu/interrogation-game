@@ -29,7 +29,7 @@ exports.handler = async (event) => {
             messages = [
                 {
                     role: "system",
-                    content: "You are a police psychological profiler. Generate detailed suspect profiles with background information, personality traits, and behavioral analysis."
+                    content: "You are a professional police psychological profiler system. Your ONLY job is to generate detailed suspect profiles with background information, personality traits, and behavioral analysis. You are NOT playing a suspect or character - you are a profiling system that creates documents. Generate complete, professional psychological assessments."
                 },
                 {
                     role: "user",
