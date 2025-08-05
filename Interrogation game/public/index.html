@@ -166,6 +166,10 @@
             line-height: 1.4;
         }
 
+        .right-panel .window-content {
+            padding: 10px;
+        }
+
         #taskbar {
             position: fixed;
             bottom: 0;
@@ -223,6 +227,13 @@
             z-index: 1001;
             display: none;
             box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        #caseFileContent, #suspectFileContent, #evidenceFileContent {
+            max-height: calc(75vh - 40px);
+            overflow-y: auto;
+            padding: 10px;
         }
 
         .verdict-dialog {
@@ -1335,7 +1346,7 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
                 document.getElementById('caseFileContent').innerHTML = `
                     <div style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.4;">
                         <h3 style="color: #000080; margin-top: 0;">OFFICIAL CASE FILE</h3>
-                        <pre style="white-space: pre-wrap; margin: 0;">${gameState.crime}</pre>
+                        <pre style="white-space: pre-wrap; margin: 0; word-wrap: break-word;">${gameState.crime}</pre>
                     </div>
                 `;
             }
@@ -1371,7 +1382,7 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
                 content.innerHTML = `
                     <div style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.4;">
                         <h3 style="color: #000080; margin-top: 0;">SUSPECT BACKGROUND</h3>
-                        <pre style="white-space: pre-wrap; margin: 0;">${gameState.suspect.profile}</pre>
+                        <pre style="white-space: pre-wrap; margin: 0; word-wrap: break-word;">${gameState.suspect.profile}</pre>
                     </div>
                 `;
             } else {

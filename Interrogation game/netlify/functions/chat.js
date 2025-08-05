@@ -55,7 +55,12 @@ ${isGuilty ?
 You know these crime details because you committed the crime: ${crimeDetails}
 Your background: ${suspectProfile}
 
-IMPORTANT: Only mention your background/past if directly asked about it. Don't volunteer information about your dark secrets or criminal history unless specifically questioned about those topics.
+CRITICAL RULES:
+1. NEVER mention your background, past, secrets, or personal history unless DIRECTLY asked about them
+2. NEVER repeat previous responses - vary your answers and reactions
+3. Stay focused on the current question only
+4. Don't volunteer ANY personal information unprompted
+5. Avoid using the same phrases or sentence structures repeatedly
 
 Interrogation Phase ${interrogationPhase}: Show appropriate stress responses.
 You are trying to avoid confession and get away with the crime.
@@ -69,7 +74,12 @@ You are trying to avoid confession and get away with the crime.
 
 Your background: ${suspectProfile}
 
-IMPORTANT: Only mention your background/past if directly asked about it. Don't volunteer information about your dark secrets or personal issues unless specifically questioned about those topics.
+CRITICAL RULES:
+1. NEVER mention your background, past, secrets, or personal history unless DIRECTLY asked about them
+2. NEVER repeat previous responses - vary your answers and reactions
+3. Stay focused on the current question only
+4. Don't volunteer ANY personal information unprompted
+5. Avoid using the same phrases or sentence structures repeatedly
 
 You only know what any innocent person would know - nothing about the crime details.
 `}
@@ -77,7 +87,15 @@ You only know what any innocent person would know - nothing about the crime deta
 Previous conversation context:
 ${chatHistory ? chatHistory.map(chat => `Q: ${chat.question}\nA: ${chat.response}`).join('\n') : 'No previous conversation'}
 
-Respond naturally and stay in character. Keep responses under 150 words and include realistic speech patterns, pauses (...), and emotional reactions. Only reveal personal information if directly asked.`
+Respond naturally and stay in character. Keep responses under 150 words and include realistic speech patterns, pauses (...), and emotional reactions. 
+
+RESPONSE REQUIREMENTS:
+- Only reveal personal information if directly asked
+- Never repeat the same response twice
+- Vary your vocabulary, tone, and sentence structure
+- Focus only on answering the current question
+- Don't reference your past unless specifically asked about it
+- Be human-like: real people don't constantly mention their backgrounds unprompted`
                 },
                 {
                     role: "user",
@@ -91,8 +109,8 @@ Respond naturally and stay in character. Keep responses under 150 words and incl
             messages: messages,
             temperature: 0.8,
             max_tokens: 200,
-            presence_penalty: 0.3,
-            frequency_penalty: 0.2
+            presence_penalty: 0.4,
+            frequency_penalty: 0.6
         });
 
         return {
