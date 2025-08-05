@@ -1212,20 +1212,7 @@ Recommend direct but non-threatening approach. Subject may respond better to emp
                 }
             });
 
-            // Check for major slip-up that could lead to confession
-            if (gameState.stress > gameState.suspect.slipUpThreshold && !gameState.suspect.hasSlippedUp && Math.random() < 0.4) {
-                gameState.suspect.hasSlippedUp = true;
-                setTimeout(() => {
-                    const confessionPrompt = `Generate a confession or major slip-up for ${gameState.suspect.name}. They've reached their breaking point under interrogation. Make it emotional and believable, revealing key details about the crime. Keep it under 150 words.`;
-                    
-                                         queryChatGPT(confessionPrompt).then(confession => {
-                         addChatMessage('suspect', confession);
-                         gameState.stress = Math.min(100, gameState.stress + 40);
-                         updateStressDisplay();
-                         updateLiveFeed();
-                     });
-                }, 2000);
-            }
+            // Removed automatic confession - let the player control the interrogation
 
             return { slipUpDetected, slipUpType };
         }
@@ -1484,10 +1471,16 @@ ${'█'.repeat(Math.floor(gameState.stress / 3))}${'▒'.repeat(Math.max(0, 33 -
             }
         }
 
-        // Make verdict function - skip to end game
+        // Make verdict function - go to verdict screen
         function makeVerdict() {
             if (confirm('Are you ready to make your verdict? This will end the interrogation.')) {
-                endGame();
+                // Stop the timer
+                if (window.timerInterval) {
+                    clearInterval(window.timerInterval);
+                }
+                
+                // Show the verdict screen (same as when time runs out)
+                document.getElementById('gameOverScreen').style.display = 'block';
             }
         }
 
@@ -1665,7 +1658,7 @@ Strong evidence may cause stress spikes.</pre>
 
         // Timer and game flow
         function startTimer() {
-            const timerInterval = setInterval(() => {
+            window.timerInterval = setInterval(() => {
                 gameState.timer--;
                 const minutes = Math.floor(gameState.timer / 60);
                 const seconds = gameState.timer % 60;
@@ -1673,7 +1666,7 @@ Strong evidence may cause stress spikes.</pre>
                     `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 
                 if (gameState.timer <= 0) {
-                    clearInterval(timerInterval);
+                    clearInterval(window.timerInterval);
                     endInterrogation();
                 }
                 
