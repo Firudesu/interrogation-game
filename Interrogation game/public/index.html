@@ -636,35 +636,91 @@
     </div>
 
     <script>
-        // Enhanced crime scenarios with more variety and detail
+        // Comprehensive crime database with detailed scenarios
         const CRIME_TEMPLATES = [
             {
                 type: "Armed Robbery",
-                locations: ["First National Bank", "Corner Convenience Store", "Downtown Jewelry Shop", "Gas Station", "Pharmacy"],
-                motives: ["Gambling debts", "Drug addiction", "Desperate for rent money", "Supporting sick family member", "Gang initiation"],
-                evidence: ["Security footage", "Fingerprints on weapon", "Witness testimony", "DNA evidence", "Cell phone records"],
-                timeFrames: ["early morning", "late evening", "during lunch rush", "closing time", "weekend night"]
+                locations: ["First National Bank", "Corner Convenience Store", "Downtown Jewelry Shop", "Gas Station", "Pharmacy", "Liquor Store", "Check Cashing Place", "Pawn Shop"],
+                motives: ["Gambling debts to dangerous people", "Heroin addiction spiraling out of control", "Eviction notice due tomorrow", "Mother needs cancer treatment money", "Gang initiation requirement", "Lost job and behind on child support", "Loan shark threats"],
+                evidence: ["Security footage", "Fingerprints on weapon", "Witness testimony", "DNA on mask", "Cell phone records", "Getaway vehicle", "Weapon registration", "ATM withdrawal records"],
+                timeFrames: ["6:30 AM opening", "11:45 PM closing", "2:15 PM lunch rush", "9:20 PM weekend", "7:00 AM shift change"]
             },
             {
-                type: "Homicide",
-                locations: ["Victim's apartment", "Dark alley", "Office building", "Parking garage", "Abandoned warehouse"],
-                motives: ["Insurance money", "Love triangle", "Business dispute", "Revenge", "Silencing witness"],
-                evidence: ["Murder weapon", "Blood spatter analysis", "Victim's phone records", "CCTV footage", "Forensic evidence"],
-                timeFrames: ["late at night", "early morning", "during work hours", "weekend evening", "holiday night"]
+                type: "Homicide - Crime of Passion",
+                locations: ["Victim's apartment", "Motel room", "Office conference room", "Restaurant parking lot", "Victim's car", "Hotel bar", "Private residence", "Workplace"],
+                motives: ["Discovered spouse's affair", "Caught embezzling company funds", "Blackmail attempt gone wrong", "Jealous rage over promotion", "Found out about secret child", "Business partner betrayal", "Romantic rejection turned violent"],
+                evidence: ["Murder weapon", "Blood spatter", "Victim's phone records", "CCTV footage", "Defensive wounds", "Torn clothing", "Witness statements", "Hotel records"],
+                timeFrames: ["11:30 PM confrontation", "6:45 AM surprise visit", "1:20 PM lunch meeting", "8:15 PM after work", "10:45 PM weekend"]
+            },
+            {
+                type: "Premeditated Murder",
+                locations: ["Victim's home", "Remote hiking trail", "Abandoned warehouse", "Parking garage", "Office building", "Storage unit", "Construction site", "Boat marina"],
+                motives: ["Life insurance policy", "Inheritance money", "Silencing witness to other crime", "Business partnership dispute", "Custody battle revenge", "Cover up affair", "Remove business rival"],
+                evidence: ["Poison residue", "Planned alibi evidence", "Purchase records", "Internet search history", "Travel receipts", "Weapon procurement", "Surveillance footage", "Financial records"],
+                timeFrames: ["3:20 AM planned time", "7:10 PM routine meeting", "12:45 PM lunch appointment", "9:30 PM social gathering", "5:15 AM morning jog"]
+            },
+            {
+                type: "Fraud - Identity Theft",
+                locations: ["Victim's bank", "Online transactions", "Credit card company", "Government office", "Tax preparation office", "Retail stores", "Car dealership", "Real estate office"],
+                motives: ["Massive gambling debts", "Lifestyle beyond means", "Supporting drug habit", "Funding lavish wedding", "Medical bills", "Business investment gone bad", "Revenge against victim"],
+                evidence: ["Financial records", "Forged documents", "Computer hard drive", "Credit reports", "Bank statements", "Fake identification", "Purchase receipts", "Email communications"],
+                timeFrames: ["During business hours", "Late night online", "Weekend transactions", "Holiday shopping", "Tax season"]
+            },
+            {
+                type: "Fraud - Embezzlement",
+                locations: ["Corporate office", "Accounting department", "Bank branch", "Non-profit organization", "Government agency", "Small business", "Investment firm", "Charity organization"],
+                motives: ["Gambling addiction", "Supporting secret family", "Paying for child's medical treatment", "Maintaining expensive lifestyle", "Covering previous theft", "Funding startup business", "Blackmail payments"],
+                evidence: ["Altered financial records", "Fake invoices", "Bank transfers", "Accounting software logs", "Email communications", "Witness testimony", "Audit findings", "Computer forensics"],
+                timeFrames: ["After hours access", "During busy periods", "End of fiscal year", "When supervisor away", "Weekend work"]
+            },
+            {
+                type: "Domestic Violence - Aggravated Assault",
+                locations: ["Family home", "Victim's workplace", "Children's school", "Public restaurant", "Parking lot", "Victim's car", "Friend's house", "Courthouse"],
+                motives: ["Jealousy over new relationship", "Custody dispute escalation", "Financial stress", "Alcohol-fueled rage", "Control and intimidation", "Victim threatening to leave", "Discovery of affair"],
+                evidence: ["Medical records", "Photos of injuries", "Witness statements", "Police reports", "Text messages", "Voicemails", "Security footage", "Hospital records"],
+                timeFrames: ["Late night argument", "After work confrontation", "Weekend visitation", "During court hearing", "Holiday gathering"]
             },
             {
                 type: "Kidnapping",
-                locations: ["School parking lot", "Shopping mall", "Residential street", "Office parking garage", "Public park"],
-                motives: ["Ransom demand", "Custody dispute", "Human trafficking", "Personal vendetta", "Mistaken identity"],
-                evidence: ["Ransom note", "Vehicle description", "Witness accounts", "Phone trace", "Security camera footage"],
-                timeFrames: ["after school", "during shopping", "morning jog", "late evening", "weekend afternoon"]
+                locations: ["School parking lot", "Shopping mall", "Residential street", "Office parking garage", "Public park", "Bus stop", "Gym parking lot", "Restaurant"],
+                motives: ["Ransom for money", "Custody dispute", "Human trafficking", "Personal vendetta", "Mistaken identity", "Sexual assault intent", "Witness intimidation"],
+                evidence: ["Ransom note", "Vehicle description", "Witness accounts", "Phone trace", "Security footage", "DNA evidence", "Fingerprints", "Cell tower data"],
+                timeFrames: ["After school pickup", "Late night jogging", "Early morning commute", "Weekend shopping", "Evening workout"]
             },
             {
                 type: "Burglary",
-                locations: ["Suburban home", "Luxury apartment", "Office building", "Electronics store", "Art gallery"],
-                motives: ["Quick cash", "Specific valuable item", "Inside information", "Thrill seeking", "Feeding addiction"],
-                evidence: ["Forced entry marks", "Stolen items list", "Fingerprints", "Neighbor testimony", "Alarm system logs"],
-                timeFrames: ["during work hours", "vacation absence", "late night", "early morning", "weekend"]
+                locations: ["Suburban home", "Luxury apartment", "Office building", "Electronics store", "Art gallery", "Jewelry store", "Warehouse", "Storage facility"],
+                motives: ["Drug money needed", "Specific valuable target", "Inside information tip", "Thrill and excitement", "Feeding gambling addiction", "Revenge against owner", "Quick cash for bills"],
+                evidence: ["Forced entry marks", "Stolen items list", "Fingerprints", "Neighbor testimony", "Alarm system logs", "Tool marks", "DNA on glass", "Footprint casts"],
+                timeFrames: ["During work hours", "Vacation absence", "Late night entry", "Early morning", "Weekend afternoon"]
+            },
+            {
+                type: "Drug Trafficking",
+                locations: ["Apartment complex", "Warehouse district", "School zone", "Downtown corner", "Suburban house", "Storage unit", "Abandoned building", "Car wash"],
+                motives: ["Major profit opportunity", "Paying off drug debt", "Funding lavish lifestyle", "Supporting family", "Gang territory expansion", "Addiction funding", "Easy money appeal"],
+                evidence: ["Drug residue", "Scales and packaging", "Large cash amounts", "Cell phone records", "Surveillance footage", "Witness testimony", "Bank records", "Vehicle searches"],
+                timeFrames: ["Late night deals", "School dismissal", "Weekend parties", "Early morning", "Rush hour traffic"]
+            },
+            {
+                type: "Arson",
+                locations: ["Family business", "Ex-partner's house", "Competitor's store", "Abandoned warehouse", "Insurance target building", "Vehicle", "Forest area", "Construction site"],
+                motives: ["Insurance fraud", "Revenge against owner", "Cover up other crime", "Eliminate business competition", "Gang intimidation", "Thrill seeking", "Mental illness episode"],
+                evidence: ["Accelerant residue", "Fire pattern analysis", "Witness statements", "Security footage", "Purchase records", "Cell phone location", "Insurance policies", "Forensic evidence"],
+                timeFrames: ["3:00 AM fire start", "During business hours", "Weekend night", "Holiday absence", "Storm cover"]
+            },
+            {
+                type: "Sexual Assault",
+                locations: ["Victim's apartment", "Office building", "College campus", "Public park", "Parking garage", "Bar restroom", "Hotel room", "Residential street"],
+                motives: ["Power and control", "Opportunistic crime", "Stalking escalation", "Date rape scenario", "Workplace harassment", "Acquaintance assault", "Predatory behavior"],
+                evidence: ["DNA evidence", "Medical examination", "Witness testimony", "Security footage", "Text messages", "Torn clothing", "Defensive wounds", "Location forensics"],
+                timeFrames: ["Late night encounter", "After work hours", "Weekend party", "Lunch break meeting", "Evening social event"]
+            },
+            {
+                type: "White Collar Fraud",
+                locations: ["Investment firm", "Insurance company", "Real estate office", "Law firm", "Accounting office", "Government agency", "Corporate headquarters", "Banking institution"],
+                motives: ["Ponzi scheme profits", "Covering investment losses", "Lifestyle maintenance", "Gambling debt payment", "Family medical expenses", "Business expansion", "Retirement fund theft"],
+                evidence: ["Financial documents", "Email communications", "Bank records", "Client testimonies", "Audit reports", "Computer forensics", "Paper trail", "Wire transfer records"],
+                timeFrames: ["During market hours", "End of quarter", "Audit period", "Client meetings", "After hours access"]
             }
         ];
 
@@ -709,6 +765,38 @@
                 innocentBehavior: ["Defeated by system", "Expects worst outcome", "Doesn't fight accusations", "Resigned to fate"],
                 slipUpTriggers: ["Kindness", "Understanding", "Mention of family"],
                 stressResponses: ["Emotional breakdown", "Self-harm threats", "Complete shutdown", "Dissociation"]
+            },
+            {
+                name: "White Collar Professional",
+                traits: ["Educated", "Articulate", "Status-conscious", "Entitled"],
+                guiltyBehavior: ["Uses technical jargon", "Minimizes harm", "Claims ignorance", "Blames system"],
+                innocentBehavior: ["Explains complex details", "Cooperates fully", "Provides documentation", "Professional demeanor"],
+                slipUpTriggers: ["Financial pressure", "Reputation damage", "Family shame", "Career destruction"],
+                stressResponses: ["Becomes condescending", "Over-explains", "Name-drops", "Threatens lawsuits"]
+            },
+            {
+                name: "Desperate Parent",
+                traits: ["Family-focused", "Protective", "Emotional", "Sacrificial"],
+                guiltyBehavior: ["Justifies for family", "Claims necessity", "Shows no regret", "Would do it again"],
+                innocentBehavior: ["Talks about children", "Worried about family", "Cooperative for kids", "Honest about struggles"],
+                slipUpTriggers: ["Children mentioned", "Family threats", "Financial pressure", "Medical bills"],
+                stressResponses: ["Emotional about family", "Protective instincts", "Desperation shows", "Breaks down crying"]
+            },
+            {
+                name: "Addicted Desperate",
+                traits: ["Erratic", "Unpredictable", "Mood swings", "Desperate"],
+                guiltyBehavior: ["Blames addiction", "Minimizes actions", "Promises change", "Shows withdrawal"],
+                innocentBehavior: ["Confused timeline", "Memory gaps", "Admits problems", "Wants help"],
+                slipUpTriggers: ["Drug mentions", "Withdrawal symptoms", "Rock bottom", "Family disappointment"],
+                stressResponses: ["Physical symptoms", "Erratic behavior", "Emotional swings", "Desperate pleas"]
+            },
+            {
+                name: "Sociopathic Charmer",
+                traits: ["Charismatic", "Manipulative", "Lacks empathy", "Calculating"],
+                guiltyBehavior: ["Mimics emotions", "Manipulates interrogator", "Shows fake remorse", "Plays victim"],
+                innocentBehavior: ["Overly helpful", "Too charming", "Perfect answers", "No genuine emotion"],
+                slipUpTriggers: ["Empathy tests", "Victim impact", "Emotional appeals", "Moral questions"],
+                stressResponses: ["Mask slips", "Shows true nature", "Becomes cold", "Reveals contempt"]
             }
         ];
 
