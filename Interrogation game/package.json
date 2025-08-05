@@ -1,7 +1,26 @@
 {
   "name": "interrogation-game",
   "version": "1.0.0",
+  "description": "Enhanced Police Interrogation Simulator with AI-powered suspects",
+  "main": "index.html",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'No build step required'",
+    "deploy": "netlify deploy --prod"
+  },
   "dependencies": {
-    "openai": "^4.0.0"
-  }
+    "openai": "^4.20.1"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^2.0.0"
+  },
+  "keywords": [
+    "interrogation",
+    "detective",
+    "game",
+    "ai",
+    "chatgpt"
+  ],
+  "author": "Detective Game Developer",
+  "license": "MIT"
 }
