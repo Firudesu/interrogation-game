@@ -5,124 +5,122 @@ exports.handler = async (event) => {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const { prompt, context, isGuilty, suspectProfile, crimeDetails, chatHistory, stressLevel, interrogationPhase, requestType } = JSON.parse(event.body);
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
     try {
+        const { prompt, requestType, isGuilty, suspectProfile, crimeDetails, chatHistory, stressLevel, interrogationPhase } = JSON.parse(event.body);
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
         let messages = [];
-        
-        // Handle different request types
+        let temperature = 0.7;
+        let maxTokens = 500;
+
+        // Handle different request types with completely separate system prompts
         if (requestType === 'case_generation') {
-            // For case generation - simple, direct generation without suspect role-play
+            // DOCUMENT GENERATION ONLY - NO ROLEPLAY
             messages = [
                 {
                     role: "system",
-                    content: "You are a professional police case file generator. Generate realistic, detailed police case files with proper formatting and procedural information. You are NOT a suspect - you are generating official police documents."
+                    content: `You are a police report writing system. Generate official police case files and incident reports. You are NOT a person, NOT a suspect, NOT roleplaying - you are a document generator.
+
+Create realistic police reports with:
+- Case number and incident details
+- Timeline of events
+- Evidence collected
+- Witness statements  
+- Investigation notes
+- Officer observations
+
+Write in professional police report format. Generate complete documents with all requested sections.`
                 },
                 {
                     role: "user",
                     content: prompt
                 }
             ];
-        } else if (requestType === 'suspect_profile') {
-            // For suspect profile generation
-            messages = [
-                {
-                    role: "system",
-                    content: "You are a professional police psychological profiler. Generate detailed suspect profiles with background information, personality traits, and behavioral analysis. You are NOT a suspect - you are generating official police profiles."
-                },
-                {
-                    role: "user",
-                    content: prompt
-                }
-            ];
-        } else {
-            // For suspect interrogation responses
+            temperature = 0.8;
+            maxTokens = 800;
             
+        } else if (requestType === 'suspect_profile') {
+            // DOCUMENT GENERATION ONLY - NO ROLEPLAY
             messages = [
                 {
                     role: "system",
-                    content: `You are an AI playing a suspect in a police interrogation simulation. 
+                    content: `You are a police psychological profiling system. Generate official suspect psychological profiles and background assessments. You are NOT a person, NOT a suspect, NOT roleplaying - you are a document generator.
+
+Create detailed psychological profiles with:
+- Personal background information
+- Personality traits and characteristics
+- Behavioral patterns
+- Risk assessment
+- Psychological analysis
+- Criminal history (if any)
+
+Write in professional police profiling format. Generate complete profiles with all requested sections.`
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ];
+            temperature = 0.8;
+            maxTokens = 800;
+            
+        } else {
+            // SUSPECT INTERROGATION ROLEPLAY ONLY
+            messages = [
+                {
+                    role: "system",
+                    content: `You are roleplaying as a suspect being questioned by police. 
 
 ${isGuilty ? 
-`You are GUILTY of the crime. You committed it and know all the details. You will try to hide your guilt through:
-- Subtle lies and misdirection
-- Emotional manipulation  
-- Partial truths mixed with lies
-- Defensive behavior when pressed
-- Slip-ups when stressed (stress level: ${stressLevel || 0}%)
-- Contradictions that reveal guilt over time
+`You are GUILTY of the crime. You committed it and know all the details: ${crimeDetails || 'No details provided'}
 
-You know these crime details because you committed the crime: ${crimeDetails || 'No details provided'}
-Your background: ${suspectProfile || 'No background provided'}
+Your strategy:
+- Answer basic questions but LIE or MISLEAD to avoid getting caught
+- Be cooperative on surface to seem helpful
+- Create false alibis and misdirection
+- Show stress when pressed (current stress: ${stressLevel || 0}%)
+- Never admit guilt directly
 
-CRITICAL RULES:
-1. ANSWER basic questions (job, where you were, etc.) but LIE or MISLEAD if guilty
-2. NEVER mention your past, history, background, or secrets unless DIRECTLY asked about them
-3. NEVER repeat previous responses - vary your answers and reactions
-4. Stay consistent with previous answers you've given in this conversation
-5. Focus ONLY on the current question - don't reference your background unprompted
-6. Be cooperative on surface-level questions to seem helpful
-7. BANNED PHRASES: "my past", "my history", "my background", "make me look suspicious"
+Your background: ${suspectProfile || 'No background provided'}` : 
+`You are INNOCENT of the crime. You did NOT commit it and don't know crime details.
 
-Interrogation Phase ${interrogationPhase || 1}: Show appropriate stress responses.
-You are trying to avoid confession and get away with the crime by seeming cooperative while lying about key details.
-REMEMBER: You are a person being questioned, not someone constantly worried about their past.
-` : 
-`You are INNOCENT of the crime. You did NOT commit it and don't know the crime details. Respond with:
-- Honest confusion about accusations
-- Consistent, truthful answers  
-- Appropriate emotional reactions to false accusations
-- Willingness to cooperate
-- Genuine attempts to help catch the real criminal
+Your response:
+- Answer questions truthfully and consistently  
+- Show confusion about accusations
+- Be cooperative and helpful
+- Want to assist the investigation
+- Display appropriate emotional reactions to false accusations
 
-Your background: ${suspectProfile || 'No background provided'}
+Your background: ${suspectProfile || 'No background provided'}`}
 
 CRITICAL RULES:
-1. ANSWER basic questions (job, where you were, etc.) truthfully and consistently
-2. NEVER mention your past, history, background, or secrets unless DIRECTLY asked about them
-3. NEVER repeat previous responses - vary your answers and reactions
-4. Stay consistent with previous answers you've given in this conversation
-5. Focus ONLY on the current question - don't reference your background unprompted
-6. Be cooperative and helpful - you want to assist the investigation
-7. BANNED PHRASES: "my past", "my history", "my background", "make me look suspicious"
+1. ANSWER basic questions (job, where you were, etc.) - ${isGuilty ? 'LIE if guilty' : 'be TRUTHFUL if innocent'}
+2. NEVER mention your background/past/secrets unless DIRECTLY asked
+3. NEVER repeat previous responses - vary your answers
+4. Stay consistent with previous answers in this conversation
+5. Focus ONLY on the current question
+6. Don't constantly refuse - real people cooperate with police
+7. BANNED PHRASES: "my past", "my history", "my background"
 
-You only know what any innocent person would know - nothing about the crime details.
-REMEMBER: You are an innocent person being questioned, not someone constantly worried about their past.
-`}
+Previous conversation:
+${chatHistory ? chatHistory.map(chat => `DETECTIVE: ${chat.question}\nYOU: ${chat.response}`).join('\n') : 'No previous conversation'}
 
-Previous conversation context (STAY CONSISTENT with your previous answers):
-${chatHistory ? chatHistory.map(chat => `DETECTIVE: ${chat.question}\nYOU SAID: ${chat.response}`).join('\n\n') : 'No previous conversation'}
-
-CONSISTENCY CHECK: Review your previous answers above and stay consistent. Don't contradict yourself.
-
-Respond naturally and stay in character. Keep responses under 150 words and include realistic speech patterns, pauses (...), and emotional reactions. 
-
-RESPONSE REQUIREMENTS:
-- Answer basic questions (job, location, activities) - lie if guilty, be truthful if innocent
-- NEVER mention past, history, background, or secrets unless directly asked
-- Never repeat the same response twice
-- Stay consistent with what you've already said in this conversation
-- Vary your vocabulary, tone, and sentence structure
-- Focus only on answering the specific question asked
-- Don't constantly refuse to answer - real people cooperate with police
-- Be human-like: provide realistic details about your current situation
-- If guilty: Create believable lies and false alibis (but don't mention having a past)
-- If innocent: Give consistent, truthful information (but don't mention having a past)
-- ABSOLUTELY FORBIDDEN: Any reference to "my past", "my history", "my background"
+Respond naturally, under 150 words. ${isGuilty ? 'Try to seem innocent while lying about key details.' : 'Be truthful and helpful.'}`
                 },
                 {
                     role: "user",
                     content: prompt
                 }
             ];
+            temperature = 0.7;
+            maxTokens = 200;
         }
 
         const completion = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
             messages: messages,
-            temperature: 0.8,
-            max_tokens: requestType === 'case_generation' || requestType === 'suspect_profile' ? 800 : 200,
+            temperature: temperature,
+            max_tokens: maxTokens,
             presence_penalty: 0.6,
             frequency_penalty: 0.9
         });
@@ -136,6 +134,7 @@ RESPONSE REQUIREMENTS:
             },
             body: JSON.stringify({ content: completion.choices[0].message.content })
         };
+        
     } catch (error) {
         console.error('OpenAI API Error:', error);
         return { 
