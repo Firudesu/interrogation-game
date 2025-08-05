@@ -5,10 +5,18 @@ exports.handler = async (event) => {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const { prompt, context, isGuilty, suspectProfile, crimeDetails, chatHistory, stressLevel, interrogationPhase, requestType } = JSON.parse(event.body);
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    try {
+        const body = JSON.parse(event.body || '{}');
+        const { prompt, requestType = 'interrogation' } = body;
+        
+        if (!prompt) {
+            return { 
+                statusCode: 400, 
+                body: JSON.stringify({ error: 'Prompt is required' }) 
+            };
+        }
 
-        try {
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         let messages = [];
         
         // Handle different request types
@@ -37,7 +45,9 @@ exports.handler = async (event) => {
                 }
             ];
         } else {
-            // For suspect interrogation responses
+            // For suspect interrogation responses - get additional parameters
+            const { isGuilty, suspectProfile, crimeDetails, chatHistory, stressLevel, interrogationPhase } = body;
+            
             messages = [
                 {
                     role: "system",
@@ -49,11 +59,11 @@ ${isGuilty ?
 - Emotional manipulation  
 - Partial truths mixed with lies
 - Defensive behavior when pressed
-- Slip-ups when stressed (stress level: ${stressLevel}%)
+- Slip-ups when stressed (stress level: ${stressLevel || 0}%)
 - Contradictions that reveal guilt over time
 
-You know these crime details because you committed the crime: ${crimeDetails}
-Your background: ${suspectProfile}
+You know these crime details because you committed the crime: ${crimeDetails || 'No details provided'}
+Your background: ${suspectProfile || 'No background provided'}
 
 CRITICAL RULES:
 1. ANSWER basic questions (job, where you were, etc.) but LIE or MISLEAD if guilty
@@ -64,7 +74,7 @@ CRITICAL RULES:
 6. Be cooperative on surface-level questions to seem helpful
 7. BANNED PHRASES: "my past", "my history", "my background", "make me look suspicious"
 
-Interrogation Phase ${interrogationPhase}: Show appropriate stress responses.
+Interrogation Phase ${interrogationPhase || 1}: Show appropriate stress responses.
 You are trying to avoid confession and get away with the crime by seeming cooperative while lying about key details.
 REMEMBER: You are a person being questioned, not someone constantly worried about their past.
 ` : 
@@ -75,7 +85,7 @@ REMEMBER: You are a person being questioned, not someone constantly worried abou
 - Willingness to cooperate
 - Genuine attempts to help catch the real criminal
 
-Your background: ${suspectProfile}
+Your background: ${suspectProfile || 'No background provided'}
 
 CRITICAL RULES:
 1. ANSWER basic questions (job, where you were, etc.) truthfully and consistently
